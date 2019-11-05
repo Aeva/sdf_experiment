@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="glue">
+      <UniqueIdentifier>{b6d5e334-9ee2-4b45-84b5-3593fc970b44}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="glad">
+      <UniqueIdentifier>{425abc04-233d-47b8-a42a-dd4268deea4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{5ff194be-39fb-4e94-a81c-15634f32ec97}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\glue\errors.cpp">
+      <Filter>glue</Filter>
+    </ClCompile>
+    <ClCompile Include="..\glue\gl_boilerplate.cpp">
+      <Filter>glue</Filter>
+    </ClCompile>
+    <ClCompile Include="..\glue\init.cpp">
+      <Filter>glue</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sdf_experiment.cpp" />
+    <ClCompile Include="..\dependencies\glad\src\glad.c">
+      <Filter>glad</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\glue\errors.h">
+      <Filter>glue</Filter>
+    </ClInclude>
+    <ClInclude Include="..\glue\gl_boilerplate.h">
+      <Filter>glue</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdf_experiment.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\shaders\splat.fs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\splat.vs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\screen.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\sdf.glsl">
+      <Filter>shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
