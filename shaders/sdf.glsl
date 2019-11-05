@@ -1,4 +1,24 @@
+prepend: shaders/screen.glsl
 --------------------------------------------------------------------------------
+
+layout(std140, binding = 2)
+uniform ViewInfoBlock
+{
+	mat4 WorldToView;
+	mat4 ViewToWorld;
+	mat4 ViewToClip;
+	mat4 ClipToView;
+};
+
+
+layout(std140, binding = 3)
+uniform CameraInfoBlock
+{
+	vec4 CameraOrigin;
+};
+
+
+layout(origin_upper_left) in vec4 gl_FragCoord;
 
 
 const vec3 UpVector = vec3(0.0, 0.0, 1.0);
@@ -90,22 +110,29 @@ vec3 RotateZ(vec3 Point, float Radians)
 // Ray Marching
 // ------------
 
-vec3 GetRayDir(vec2 NDC, float Aspect)
+vec4 ViewCorner(vec2 NDC)
 {
-    vec3 EyeDir = vec3(0.0, -1.0, 0.0);
-    vec3 Horizontal = normalize(cross(EyeDir, UpVector));
-    vec3 a = Horizontal * (NDC.x * Aspect);
-    vec3 b = UpVector * NDC.y;
-    vec3 c = EyeDir * 5.5;
-    return normalize(a + b + c);
+	const vec4 View = ClipToView * vec4(NDC, 0.0, 1.0);
+	return vec4(normalize(vec3(View.x, View.y, 0.0) / View.w), 1.0);
+}
+
+vec3 GetRayDir()
+{
+	vec2 NDC = gl_FragCoord.xy * ScreenSize.zw * 2.0 - 1.0;
+	vec4 View = ClipToView * vec4(NDC.xy, 0.0, 1.0);
+	View = vec4(normalize(vec3(View.x, View.y, View.z) / View.w), 1.0);
+	vec4 World = ViewToWorld * View;
+	return normalize(vec3(World.xyz / World.w) - CameraOrigin.xyz);
 }
 
 
 ColorSDF SceneSDF(vec3 Position, bool bInterior);
 
 
-void RayTrace(vec3 RayDir, inout vec3 Position, inout int PaintFn, out ColorSDF Scene)
+void RayTrace(inout vec3 Position, inout int PaintFn, out ColorSDF Scene)
 {
+	const vec3 RayDir = GetRayDir();
+
     bool bInterior = false;
     for (int Step = 0; Step <= MaxIterations; ++Step)
     {
@@ -117,11 +144,11 @@ void RayTrace(vec3 RayDir, inout vec3 Position, inout int PaintFn, out ColorSDF 
                 if (Scene2.PaintFn == 3)
                 {
                 	Scene = Scene2;
-                	break;
+                	return;
                 }
              	else if (Scene2.PaintFn != 1)
                 {
-                    break;
+                    return;
                 }
             }
             Position += RayDir * Scene2.Distance;
@@ -137,7 +164,7 @@ void RayTrace(vec3 RayDir, inout vec3 Position, inout int PaintFn, out ColorSDF 
                 }
          		else
                 {
-	            	break;
+	            	return;
                 }
     	    }
         	else

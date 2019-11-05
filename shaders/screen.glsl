@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 
 layout(std140, binding = 1)
-uniform ViewInfoBlock
+uniform ScreenInfoBlock
 {
 	vec4 ScreenSize; // (Width, Height, InvWidth, InvHeight)
 };
