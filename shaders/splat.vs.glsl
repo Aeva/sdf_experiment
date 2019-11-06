@@ -24,7 +24,7 @@ void main()
 0, 1
 1, 0
 */
-	// (-1.0, -1.0) is the bottom-left corner of the screen.
+	// (-1.0, -1.0) is the upper-left corner of the screen.
 	vec2 Alpha = vec2(float(((gl_VertexID % 3) & 1) << 2), float(((gl_VertexID % 3) & 2) << 1)) * 0.25;
 	if (gl_VertexID > 2)
 	{

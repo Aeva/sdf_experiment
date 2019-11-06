@@ -24,6 +24,7 @@ layout(origin_upper_left) in vec4 gl_FragCoord;
 const vec3 UpVector = vec3(0.0, 0.0, 1.0);
 const int MaxIterations = 500;
 const float AlmostZero = 0.001;
+const float MinStep = 0.001;
 
 
 struct ColorSDF
@@ -38,6 +39,8 @@ struct ColorSDF
 // ---------
 // Misc Math
 // ---------
+
+#define IS_SOLID(val) val < AlmostZero
 
 #define TRAN(X, Y, Z) mat4( \
     1.0, 0.0, 0.0, X, \
@@ -72,7 +75,8 @@ struct ColorSDF
 
 vec3 Transform3(mat4 Matrix, vec3 Point)
 {
-    return (vec4(Point, 1.0) * Matrix).xyz;
+	vec4 Fnord = vec4(Point, 1.0) * Matrix;
+    return Fnord.xyz / Fnord.w;
 }
     
     
@@ -126,53 +130,25 @@ vec3 GetRayDir()
 }
 
 
-ColorSDF SceneSDF(vec3 Position, bool bInterior);
+ColorSDF SceneSDF(vec3 Position);
 
 
-void RayTrace(inout vec3 Position, inout int PaintFn, out ColorSDF Scene)
+void RayTrace(inout vec3 Position, out ColorSDF Scene)
 {
 	const vec3 RayDir = GetRayDir();
-
-    bool bInterior = false;
-    for (int Step = 0; Step <= MaxIterations; ++Step)
+	for (int Step = 0; Step <= MaxIterations; ++Step)
     {
-		if (bInterior)
+		Scene = SceneSDF(Position);
+        if (IS_SOLID(Scene.Distance))
         {
-            ColorSDF Scene2 = SceneSDF(Position, true);
-            if (Scene2.Distance < AlmostZero)
-            {
-                if (Scene2.PaintFn == 3)
-                {
-                	Scene = Scene2;
-                	return;
-                }
-             	else if (Scene2.PaintFn != 1)
-                {
-                    return;
-                }
-            }
-            Position += RayDir * Scene2.Distance;
+            return;
         }
      	else
         {
-            Scene = SceneSDF(Position, false);
-            if (Scene.Distance < AlmostZero)
-        	{
-				if (Scene.PaintFn == 1)
-                {
-                    bInterior = true;
-                }
-         		else
-                {
-	            	return;
-                }
-    	    }
-        	else
-        	{
-            	Position += RayDir * Scene.Distance;
-	        }
+		    Position += RayDir * min(max(Scene.Distance, MinStep), 10.0);
         }
     }
+	Scene.PaintFn = -1;
 }
 
 
@@ -277,7 +253,7 @@ ColorSDF Intersection(ColorSDF LHS, ColorSDF RHS)
 ColorSDF Replace(ColorSDF LHS, ColorSDF RHS)
 {
     float Distance = opIntersection(LHS.Distance, RHS.Distance);
-    if (Distance < AlmostZero)
+    if (IS_SOLID(Distance))
     {
         RHS.Distance = Distance;
         return RHS;
@@ -296,7 +272,7 @@ ColorSDF Cut(ColorSDF LHS, ColorSDF RHS)
 ColorSDF CutAndPaint(ColorSDF LHS, ColorSDF RHS)
 {
     float Distance = opSubtraction(LHS.Distance, RHS.Distance);
-    if (RHS.Distance < AlmostZero)
+    if (IS_SOLID(RHS.Distance))
     {
         RHS.Distance = Distance;
         return RHS;
