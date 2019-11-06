@@ -60,11 +60,7 @@ StatusCode SetupGLFW()
 	}
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-#if DEBUG_BUILD
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-#else
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-#endif
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if DEBUG_BUILD
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
@@ -113,8 +109,8 @@ StatusCode SetupGLFW()
 		{
 			glEnable(GL_DEBUG_OUTPUT);
 			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-			glDebugMessageCallback(&DebugCallback, nullptr);
-			glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+			glDebugMessageCallbackARB(&DebugCallback, nullptr);
+			glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 		}
 		else
 		{
