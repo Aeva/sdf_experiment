@@ -1,5 +1,11 @@
 --------------------------------------------------------------------------------
 
+layout(std140, binding = 4)
+uniform ClipInfoBlock
+{
+	vec4 ClipBounds; // (MinX, MinY, MaxX, MaxY)
+};
+
 out gl_PerVertex
 {
   vec4 gl_Position;
@@ -9,5 +15,20 @@ out gl_PerVertex
 
 void main()
 {
-	gl_Position = vec4(-1.0 + float((gl_VertexID & 1) << 2), -1.0 + float((gl_VertexID & 2) << 1), 0, 1);
+/*
+0, 0
+1, 0
+0, 1
+
+1, 1
+0, 1
+1, 0
+*/
+	// (-1.0, -1.0) is the bottom-left corner of the screen.
+	vec2 Alpha = vec2(float(((gl_VertexID % 3) & 1) << 2), float(((gl_VertexID % 3) & 2) << 1)) * 0.25;
+	if (gl_VertexID > 2)
+	{
+		Alpha = 1.0 - Alpha;
+	}
+	gl_Position = vec4(mix(ClipBounds.xy, ClipBounds.zw, Alpha), 0.0, 1.0);
 }
