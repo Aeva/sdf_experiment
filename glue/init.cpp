@@ -60,7 +60,11 @@ StatusCode SetupGLFW()
 	}
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+#if DEBUG_BUILD
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+#else
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+#endif
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if DEBUG_BUILD
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
@@ -162,6 +166,15 @@ StatusCode DemoSetup ()
 
 void DrawFrame()
 {
+#ifdef FPS_COUNTER
+	static double LastTime = 0.0;
+	const double Now = glfwGetTime();
+	const double Delta = Now - LastTime;
+	LastTime = Now;
+	const double FPS = 1.0 / Delta;
+	std::cout << "FPS: " << FPS << "\n";
+#endif
+
 	if (WindowIsDirty)
 	{
 		SDFExperiment::WindowIsDirty();
