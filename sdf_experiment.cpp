@@ -1,4 +1,5 @@
 #include "sdf_experiment.h"
+#define GLM_FORCE_SWIZZLE
 #include "glm/glm.hpp"
 #include "glm/ext.hpp"
 
@@ -130,9 +131,48 @@ void SDFExperiment::Render()
 
 	for (int i = 0; i < ObjectsCount; ++i)
 	{
+		const float Fnord = 1.0;
+		const vec4 LocalCorners[8] = \
 		{
-			const size_t Vectors = 1;
-			vec4 BufferData[1] = { vec4(-1.0, -1.0, 1.0, 1.0) };
+			vec4(-Fnord, -Fnord, -Fnord, 1.0),
+			vec4(-Fnord,  Fnord, -Fnord, 1.0),
+			vec4( Fnord, -Fnord, -Fnord, 1.0),
+			vec4( Fnord,  Fnord, -Fnord, 1.0),
+			vec4(-Fnord, -Fnord,  Fnord, 1.0),
+			vec4(-Fnord,  Fnord,  Fnord, 1.0),
+			vec4( Fnord, -Fnord,  Fnord, 1.0),
+			vec4( Fnord,  Fnord,  Fnord, 1.0)
+		};
+		float MinDist;
+		float MaxDist;
+		vec2 MinClip;
+		vec2 MaxClip;
+		mat4 LocalToClip = ViewToClip * WorldToView * Objects[i].LocalToWorld;
+		for (int c = 0; c < 8; ++c)
+		{
+			vec4 WorldCorner = Objects[i].LocalToWorld * LocalCorners[c];
+			vec4 ClipCorner = LocalToClip * LocalCorners[c];
+			vec2 Clipped = vec2(ClipCorner.xy) / ClipCorner.w;
+			float Dist = distance(vec3(WorldCorner.xyz), CameraOrigin);
+			if (c == 0)
+			{
+				MinDist = Dist;
+				MaxDist = Dist;
+				MinClip = Clipped;
+				MaxClip = Clipped;
+			}
+			else
+			{
+				MinDist = min(MinDist, Dist);
+				MaxDist = max(MaxDist, Dist);
+				MinClip = min(MinClip, Clipped);
+				MaxClip = max(MaxClip, Clipped);
+			}
+		}
+		
+		{
+			const size_t Vectors = 2;
+			vec4 BufferData[Vectors] = { vec4(MinClip, MaxClip), vec4(MinDist, MaxDist, 0.0, 0.0) };
 			ClipInfo.Upload((void*)&BufferData, sizeof(vec4) * Vectors);
 			ClipInfo.Bind(GL_UNIFORM_BUFFER, 4);
 		}

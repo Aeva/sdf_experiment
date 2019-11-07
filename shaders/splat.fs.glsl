@@ -44,7 +44,11 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 {
     // UVW should be about -1.0 to 1.0 in range, but may go over.
     vec3 UVW = Shape.Local / Shape.Extent;
-    if (Shape.PaintFn == 0)
+	/*if (Shape.Distance < -AlmostZero)
+	{
+		return vec3(1.0, 0.0, 0.0);
+	}*/
+	if (Shape.PaintFn == 0)
     {
         return vec3(1.0, 0.5, 0.0);
     }
@@ -69,7 +73,7 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 
 void main()
 {
-    vec3 Position = CameraOrigin.xyz;
+    vec3 Position;
     ColorSDF Scene;
     RayTrace(Position, Scene);
 	OutColor = vec4(Paint(Position, Scene), 1.0);

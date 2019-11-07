@@ -1,10 +1,5 @@
+prepend: shaders/screen.glsl
 --------------------------------------------------------------------------------
-
-layout(std140, binding = 4)
-uniform ClipInfoBlock
-{
-	vec4 ClipBounds; // (MinX, MinY, MaxX, MaxY)
-};
 
 out gl_PerVertex
 {

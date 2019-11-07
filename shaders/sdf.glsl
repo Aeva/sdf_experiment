@@ -41,41 +41,12 @@ struct ColorSDF
 // ---------
 
 #define IS_SOLID(val) val < AlmostZero
-
-#define TRAN(X, Y, Z) mat4( \
-    1.0, 0.0, 0.0, X, \
-    0.0, 1.0, 0.0, Y, \
-    0.0, 0.0, 1.0, Z, \
-    0.0, 0.0, 0.0, 1.0)
-
-
-#define ROTX(A) mat4( \
-    1.0, 0.0,    0.0,     0.0, \
-    0.0, cos(A), -sin(A), 0.0, \
-    0.0, sin(A), cos(A),  0.0, \
-    0.0, 0.0,    0.0,     1.0)
-
-
-#define ROTY(A) mat4( \
-    cos(A),  0.0, sin(A), 0.0, \
-    0.0,     1.0, 0.0,    0.0, \
-    -sin(A), 0.0, cos(A), 0.0, \
-    0.0,     0.0, 0.0,    1.0)
-
-
-#define ROTZ(A) mat4( \
-    cos(A), -sin(A), 0.0, 0.0, \
-    sin(A), cos(A),  0.0, 0.0, \
-    0.0,    0.0,     1.0, 0.0, \
-    0.0,    0.0,     0.0, 1.0)
-
-
 #define RADIANS(Degrees) (Degrees * 0.017453292519943295)
 
 
 vec3 Transform3(mat4 Matrix, vec3 Point)
 {
-	vec4 Fnord = vec4(Point, 1.0) * Matrix;
+	vec4 Fnord = Matrix * vec4(Point, 1.0);
     return Fnord.xyz / Fnord.w;
 }
     
@@ -114,16 +85,10 @@ vec3 RotateZ(vec3 Point, float Radians)
 // Ray Marching
 // ------------
 
-vec4 ViewCorner(vec2 NDC)
-{
-	const vec4 View = ClipToView * vec4(NDC, 0.0, 1.0);
-	return vec4(normalize(vec3(View.x, View.y, 0.0) / View.w), 1.0);
-}
-
 vec3 GetRayDir()
 {
-	vec2 NDC = gl_FragCoord.xy * ScreenSize.zw * 2.0 - 1.0;
-	vec4 View = ClipToView * vec4(NDC.xy, 0.0, 1.0);
+	const vec2 NDC = gl_FragCoord.xy * ScreenSize.zw * 2.0 - 1.0;
+	vec4 View = ClipToView * vec4(NDC.xy, -1.0, 1.0);
 	View = vec4(normalize(vec3(View.x, View.y, View.z) / View.w), 1.0);
 	vec4 World = ViewToWorld * View;
 	return normalize(vec3(World.xyz / World.w) - CameraOrigin.xyz);
@@ -133,9 +98,12 @@ vec3 GetRayDir()
 ColorSDF SceneSDF(vec3 Position);
 
 
-void RayTrace(inout vec3 Position, out ColorSDF Scene)
+void RayTrace(out vec3 Position, out ColorSDF Scene)
 {
 	const vec3 RayDir = GetRayDir();
+	const float Fudge = 0.2;
+	Position = RayDir * max(DepthRange.x - Fudge, 0.0) + CameraOrigin.xyz;
+
 	for (int Step = 0; Step <= MaxIterations; ++Step)
     {
 		Scene = SceneSDF(Position);
@@ -146,6 +114,10 @@ void RayTrace(inout vec3 Position, out ColorSDF Scene)
      	else
         {
 		    Position += RayDir * min(max(Scene.Distance, MinStep), 10.0);
+			if (distance(Position, CameraOrigin.xyz) > DepthRange.y)
+			{
+				break;
+			}
         }
     }
 	Scene.PaintFn = -1;
