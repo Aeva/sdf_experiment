@@ -18,7 +18,7 @@ uniform CameraInfoBlock
 };
 
 
-layout(origin_upper_left) in vec4 gl_FragCoord;
+in vec4 gl_FragCoord;
 
 
 const vec3 UpVector = vec3(0.0, 0.0, 1.0);

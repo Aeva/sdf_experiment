@@ -27,12 +27,13 @@ struct ShapeInfo
 };
 
 
-const int ObjectsCount = 3;
+const int ObjectsCount = 4;
 const ShapeInfo Objects[ObjectsCount] = \
 {
-	ShapeInfo(0, TRAN(-4.0, 0.0, 0.0)),
+	ShapeInfo(0, TRAN(3.0, 0.0, 0.0)),
 	ShapeInfo(1, TRAN(0.0, 0.0, 0.0)),
-	ShapeInfo(2, TRAN(4.0, 0.0, 0.0))
+	ShapeInfo(1, TRAN(0.0, 0.0, 3.0)),
+	ShapeInfo(2, TRAN(0.0, 3.0, 0.0))
 };
 
 
@@ -74,7 +75,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 	glDepthFunc(GL_GREATER);
 	glClearDepth(0.0);
 	glClearColor(0.1, 0.1, 0.1, 1.0);
-	glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 	glDepthRange(1.0, 0.0);
 
 	return StatusCode::PASS;
@@ -93,15 +94,14 @@ void SDFExperiment::Render()
 	double Time = glfwGetTime();
 	UpdateScreenInfo();
 
-	const vec3 OriginStart = vec3(10.0, -2.0, 0.0);
-	const vec3 OriginMiddle = vec3(0.0, -20.0, 0.0);
-	const vec3 OriginEnd = vec3(-10.0, -2.0, 0.0);
-	const vec3 FocusStart = vec3(4.0, 0.0, 0.0);
-	const vec3 FocusEnd = vec3(-4.0, 0.0, 0.0);
+	const vec3 OriginStart = vec3(15.0, 0.0, 0.0);
+	const vec3 OriginMiddle = vec3(5.0, 5.0, 0.0);
+	const vec3 OriginEnd = vec3(7.0, 7.0, 7.0);
 	const float Alpha = min(Time / 5.0, 1.0);
 
 	const vec3 CameraOrigin = mix(mix(OriginStart, OriginMiddle, Alpha), mix(OriginMiddle, OriginEnd, Alpha), Alpha);
-	const vec3 CameraFocus = mix(FocusStart, FocusEnd, Alpha);
+	const vec3 CameraFocus = vec3(0.0, 0.0, 0.0);
+
 	const mat4 WorldToView = lookAt(CameraOrigin, CameraFocus, vec3(0.0, 0.0, 1.0));
 	const mat4 ViewToWorld = inverse(WorldToView);
 

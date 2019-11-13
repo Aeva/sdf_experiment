@@ -14,7 +14,7 @@ uniform ObjectInfoBlock
 };
 
 
-const vec3 LightPosition = vec3(0.0, -10.0, -10.0);
+const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
 
 
 ColorSDF LerpTest(vec3 Point, float Alpha, int PaintFn)
@@ -54,8 +54,8 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 	if (Shape.PaintFn >= 0)
 	{
 		float CosAngle = dot(normalize(Point - LightPosition), WorldNormal);
-		vec3 BaseColor = vec3(Shape.PaintFn == 0, Shape.PaintFn == 1, Shape.PaintFn == 2);
-		return BaseColor * max(-CosAngle, 0.15);
+		vec3 BaseColor = vec3(Shape.PaintFn == 0, Shape.PaintFn == 2, Shape.PaintFn == 1);
+		return BaseColor * max(-CosAngle, 0.5);
 	}
     else if (Shape.PaintFn == -1)
     {
