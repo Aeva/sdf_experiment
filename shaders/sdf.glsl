@@ -24,7 +24,6 @@ layout(origin_upper_left) in vec4 gl_FragCoord;
 const vec3 UpVector = vec3(0.0, 0.0, 1.0);
 const int MaxIterations = 500;
 const float AlmostZero = 0.001;
-const float MinStep = 0.001;
 
 
 struct ColorSDF
@@ -34,6 +33,9 @@ struct ColorSDF
     vec3 Local;
     vec3 Extent;
 };
+
+
+ColorSDF SceneSDF(vec3 Position);
 
 
 // ---------
@@ -81,6 +83,23 @@ vec3 RotateZ(vec3 Point, float Radians)
 }
 
 
+vec3 WorldNormalViaGradient(vec3 Point)
+{
+#define SDF(X, Y, Z) SceneSDF(vec3(X, Y, Z)).Distance
+	return normalize(vec3(
+		SDF(Point.x + AlmostZero, Point.y, Point.z) - SDF(Point.x - AlmostZero, Point.y, Point.z),
+		SDF(Point.x, Point.y + AlmostZero, Point.z) - SDF(Point.x, Point.y - AlmostZero, Point.z),
+		SDF(Point.x, Point.y, Point.z + AlmostZero) - SDF(Point.x, Point.y, Point.z - AlmostZero)));
+#undef SDF
+}
+
+
+vec3 WorldNormalViaDerivatives(vec3 Point)
+{
+	return -normalize(cross(dFdx(Point), dFdy(Point)));
+}
+
+
 // ------------
 // Ray Marching
 // ------------
@@ -95,9 +114,6 @@ vec3 GetRayDir()
 }
 
 
-ColorSDF SceneSDF(vec3 Position);
-
-
 void RayTrace(out vec3 Position, out ColorSDF Scene)
 {
 	const vec3 RayDir = GetRayDir();
@@ -107,18 +123,16 @@ void RayTrace(out vec3 Position, out ColorSDF Scene)
 	for (int Step = 0; Step <= MaxIterations; ++Step)
     {
 		Scene = SceneSDF(Position);
-        if (IS_SOLID(Scene.Distance))
+		Position += RayDir * Scene.Distance;
+		if (IS_SOLID(Scene.Distance))
         {
-            return;
+			Scene = SceneSDF(Position);
+			return;
         }
-     	else
-        {
-		    Position += RayDir * min(max(Scene.Distance, MinStep), 10.0);
-			if (distance(Position, CameraOrigin.xyz) > DepthRange.y)
-			{
-				break;
-			}
-        }
+		if (distance(Position, CameraOrigin.xyz) > DepthRange.y)
+		{
+			break;
+		}
     }
 	Scene.PaintFn = -1;
 }
