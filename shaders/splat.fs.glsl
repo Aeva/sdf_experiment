@@ -46,6 +46,35 @@ ColorSDF FancyBox(vec3 Point)
 }
 
 
+ColorSDF Onion(vec3 Point)
+{
+	vec3 Cut1 = vec3(0.8, 1.2, 0.4);
+	vec3 Cut2 = vec3(1.4, 0.8, 0.5);
+	vec3 Cut3 = vec3(0.7, 1.4, 0.3);
+	ColorSDF Shape = Cut(Sphere(Point, 1.0, 4), Sphere((Point - Cut1), 1.5, 0));
+	bool bEven = true;
+	for (float Shell = 0.8; Shell >= 0.2; Shell-= 0.2)
+	{
+		bEven = !bEven;
+		ColorSDF Next;
+		ColorSDF ShellCut;
+		if (bEven)
+		{
+			Next = Sphere(Point, Shell, 4);
+			ShellCut = Sphere(Point - Cut2, 1.5, 0);
+		}
+		else
+		{
+			Next = Sphere(Point, Shell, 5);
+			ShellCut = Sphere(Point - Cut3, 1.5, 0);
+		}
+		Shape = Cut(Shape, Next);
+		Shape = Union(Cut(Shape, Next), Cut(Next, ShellCut));
+	}
+	return Shape;
+}
+
+
 ColorSDF SceneSDF(vec3 Point)
 {
 	vec3 Local = Transform3(WorldToLocal, Point);
@@ -63,7 +92,7 @@ ColorSDF SceneSDF(vec3 Point)
 	}
 	else if (ShapeFn == 3)
 	{
-		return Sphube(Local, 0.2, 2);
+		return Onion(Local);
 	}
 }
 
@@ -102,6 +131,14 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 	else if (Shape.PaintFn == 3)
 	{
 		return Illuminate(vec3(1.0), Point, WorldNormal);
+	}
+	else if (Shape.PaintFn == 4)
+	{
+		return Illuminate(vec3(0.0, 0.0, 1.0), Point, WorldNormal);
+	}
+	else if (Shape.PaintFn == 5)
+	{
+		return Illuminate(vec3(0.088, 0.656, 0.939), Point, WorldNormal);
 	}
     else if (Shape.PaintFn == -1)
     {

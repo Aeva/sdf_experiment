@@ -97,7 +97,7 @@ vec3 WorldNormalViaGradient(vec3 Point)
 
 vec3 WorldNormalViaDerivatives(vec3 Point)
 {
-	return -normalize(cross(dFdx(Point), dFdy(Point)));
+	return normalize(cross(dFdx(Point), dFdy(Point)));
 }
 
 
