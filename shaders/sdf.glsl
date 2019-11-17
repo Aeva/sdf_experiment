@@ -29,6 +29,7 @@ const float AlmostZero = 0.001;
 struct ColorSDF
 {
     float Distance;
+	float InnerDistance;
     int PaintFn;
     vec3 Local;
     vec3 Extent;
@@ -127,6 +128,11 @@ void RayTrace(out vec3 Position, out ColorSDF Scene)
 		if (IS_SOLID(Scene.Distance))
         {
 			Scene = SceneSDF(Position);
+			if (Scene.InnerDistance == Scene.Distance)
+			{
+				Scene.InnerDistance = 0.0;
+			}
+			Scene.Distance = 0.0;
 			return;
         }
 		if (distance(Position, CameraOrigin.xyz) > DepthRange.y)
@@ -176,9 +182,9 @@ float sdBox(vec3 p, vec3 b)
 }
 
 
-float sdCylinder(vec3 p, vec3 c)
+float sdCylinder(vec3 p, float Radius)
 {
-    return length(p.xz-c.xy)-c.z;
+    return length(p.xy)-Radius;
 }
 
 
@@ -206,15 +212,12 @@ float opIntersection(float d1, float d2)
 
 ColorSDF Union(ColorSDF LHS, ColorSDF RHS)
 {
-    float Combined = opUnion(LHS.Distance, RHS.Distance);
-    if (distance(Combined, LHS.Distance) <= distance(Combined, RHS.Distance))
+    if (LHS.Distance == opUnion(LHS.Distance, RHS.Distance))
     {
-        LHS.Distance = Combined;
         return LHS;
     }
     else
     {
-        RHS.Distance = Combined;
         return RHS;
     }
 }
@@ -222,15 +225,12 @@ ColorSDF Union(ColorSDF LHS, ColorSDF RHS)
 
 ColorSDF Intersection(ColorSDF LHS, ColorSDF RHS)
 {
-    float Combined = opIntersection(LHS.Distance, RHS.Distance);
-    if (distance(Combined, LHS.Distance) <= distance(Combined, RHS.Distance))
+    if (LHS.Distance == opIntersection(LHS.Distance, RHS.Distance))
     {
-        LHS.Distance = Combined;
         return LHS;
     }
     else
     {
-        RHS.Distance = Combined;
         return RHS;
     }
 }
@@ -238,10 +238,10 @@ ColorSDF Intersection(ColorSDF LHS, ColorSDF RHS)
 
 ColorSDF Replace(ColorSDF LHS, ColorSDF RHS)
 {
-    float Distance = opIntersection(LHS.Distance, RHS.Distance);
-    if (IS_SOLID(Distance))
+    float Combined = opIntersection(LHS.Distance, RHS.Distance);
+    if (IS_SOLID(Combined))
     {
-        RHS.Distance = Distance;
+        RHS.Distance = Combined;
         return RHS;
     }
     return LHS;
@@ -257,16 +257,13 @@ ColorSDF Cut(ColorSDF LHS, ColorSDF RHS)
 
 ColorSDF CutAndPaint(ColorSDF LHS, ColorSDF RHS)
 {
-    float Distance = opSubtraction(LHS.Distance, RHS.Distance);
-    if (IS_SOLID(RHS.Distance))
+    if (LHS.Distance == opSubtraction(LHS.Distance, RHS.Distance))
     {
-        RHS.Distance = Distance;
-        return RHS;
+        return LHS;
     }
     else
     {
-        LHS.Distance = Distance;
-        return LHS;
+        return RHS;
     }
 }
 
@@ -277,21 +274,32 @@ ColorSDF CutAndPaint(ColorSDF LHS, ColorSDF RHS)
     
 ColorSDF Sphere(vec3 Point, float Radius, int PaintFn)
 {
-    return ColorSDF(sdSphere(Point, Radius), PaintFn, Point, vec3(Radius));
+	float Distance = sdSphere(Point, Radius);
+    return ColorSDF(Distance, Distance, PaintFn, Point, vec3(Radius));
 }
 
 
 ColorSDF Box(vec3 Point, vec3 Extent, int PaintFn)
 {
-    return ColorSDF(sdBox(Point, Extent), PaintFn, Point, Extent);
+	float Distance = sdBox(Point, Extent);
+    return ColorSDF(Distance, Distance, PaintFn, Point, Extent);
 }
 
 
 ColorSDF Cylinder(vec3 Point, float Radius, float Length, int PaintFn)
 {
-    vec3 Extent = vec3(Radius, Length * 0.5, Radius);
-    float CylinderPart = sdCylinder(Point, vec3(0.0, 0.0, Radius));
+    vec3 Extent = vec3(Radius, Radius, Length * 0.5);
+    float CylinderPart = sdCylinder(Point, Radius);
     float BoxPart = sdBox(Point, Extent);
     float Distance = opIntersection(CylinderPart, BoxPart);
-    return ColorSDF(Distance, PaintFn, Point, Extent);
+    return ColorSDF(Distance, Distance, PaintFn, Point, Extent);
+}
+
+ColorSDF Cylinder2(vec3 Point, float Radius, float Length, int PaintFn)
+{
+    vec3 Extent = vec3(Radius, Radius, Length * 0.5);
+    float CylinderPart = sdCylinder(Point, Radius);
+    float BoxPart = sdBox(Point, Extent);
+    float Distance = opIntersection(CylinderPart, BoxPart);
+    return ColorSDF(Distance, CylinderPart, PaintFn, Point, Extent);
 }

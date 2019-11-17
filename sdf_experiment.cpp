@@ -30,10 +30,10 @@ struct ShapeInfo
 const int ObjectsCount = 4;
 const ShapeInfo Objects[ObjectsCount] = \
 {
-	ShapeInfo(0, TRAN(3.0, 0.0, 0.0)),
-	ShapeInfo(1, TRAN(0.0, 0.0, 0.0)),
-	ShapeInfo(1, TRAN(0.0, 0.0, 3.0)),
-	ShapeInfo(2, TRAN(0.0, 3.0, 0.0))
+	ShapeInfo(0, TRAN(0.0, 0.0, 0.0)),
+	ShapeInfo(1, TRAN(3.0, 0.0, 0.0)),
+	ShapeInfo(2, TRAN(0.0, 3.0, 0.0)),
+	ShapeInfo(3, TRAN(0.0, 0.0, 3.0))
 };
 
 
