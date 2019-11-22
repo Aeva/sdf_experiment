@@ -53,6 +53,9 @@ def build_program():
         defines["RENDERDOC_CAPTURE_AND_QUIT"] = 1
         print("    \x1b[3;30;47m{}\x1b[0m".format("...and RenderDoc!"))
 
+    defines["FPS_COUNTER"] = 1
+    defines["PROFILING"] = 1
+
     sources = ["dependencies/glad/src/glad.c"]
     sources += glob.glob("glue/**/*.cpp", recursive=True)
     sources += glob.glob("*.cpp", recursive=True)

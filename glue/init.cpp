@@ -11,6 +11,9 @@ RENDERDOC_API_1_1_2 *rdoc_api = NULL;
 #endif
 
 GLFWwindow* Window;
+#if PROFILING
+GLuint TimingQuery;
+#endif
 
 
 void ErrorCallback(int Error, const char* Description)
@@ -154,6 +157,9 @@ StatusCode SetupGLFW()
 
 StatusCode DemoSetup ()
 {
+#if PROFILING
+	glGenQueries(1, &TimingQuery);
+#endif
 	glUseProgram(0);
 	RETURN_ON_FAIL(SDFExperiment::Setup(Window));
 	return StatusCode::PASS;
@@ -162,7 +168,7 @@ StatusCode DemoSetup ()
 
 void DrawFrame()
 {
-#ifdef FPS_COUNTER
+#if FPS_COUNTER
 	static double LastTime = 0.0;
 	const double Now = glfwGetTime();
 	const double Delta = Now - LastTime;
@@ -176,10 +182,30 @@ void DrawFrame()
 		SDFExperiment::WindowIsDirty();
 	}
 
-	SDFExperiment::Render();
-
-	glfwSwapBuffers(Window);
-	glfwPollEvents();
+#if PROFILING
+	{
+		const double Start = glfwGetTime();
+		glBeginQuery(GL_TIME_ELAPSED, TimingQuery);
+#endif
+		SDFExperiment::Render();
+#if PROFILING
+		glEndQuery(GL_TIME_ELAPSED);
+		const double Delta = glfwGetTime() - Start;
+		std::cout << "render CPU: " << Delta * 1000.0 << " ms\n";
+		GLuint DrawTime;
+		glGetQueryObjectuiv(TimingQuery, GL_QUERY_RESULT, &DrawTime);
+		std::cout << "render GPU: " << DrawTime * 1e-6 << " ms\n";
+	}
+	{
+		const double Start = glfwGetTime();
+#endif
+		glfwSwapBuffers(Window);
+#if PROFILING
+		const double Delta = glfwGetTime() - Start;
+		std::cout << "present: " << Delta * 1000 << " ms\n";
+		glfwPollEvents();
+	}
+#endif
 }
 
 
