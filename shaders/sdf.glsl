@@ -268,6 +268,21 @@ ColorSDF CutAndPaint(ColorSDF LHS, ColorSDF RHS)
 }
 
 
+// "Spack" as in "to apply spackle"
+ColorSDF Spack(ColorSDF Brick, ColorSDF Spackle)
+{
+	return Union(Brick, Cut(Spackle, Brick));
+}
+
+
+ColorSDF Inset(ColorSDF Shape, float Distance)
+{
+	Shape.Distance += Distance;
+	Shape.InnerDistance += Distance;
+	return Shape;
+}
+
+
 // --------------
 // Shape Operands
 // --------------

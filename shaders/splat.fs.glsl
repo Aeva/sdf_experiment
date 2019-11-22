@@ -75,6 +75,47 @@ ColorSDF Onion(vec3 Point)
 }
 
 
+ColorSDF Wedge(vec3 Point, float Angle, int PaintFn)
+{
+	const float Alpha = min(abs(Angle) / 180.0, 1.0);
+	const float Rad = mix(RADIANS(90.0), 0.0, Alpha);
+	const float RotateA = RotateZ(Point, Rad).y;
+	const float RotateB = RotateZ(Point, -Rad).y;
+	const float Distance = max(RotateA, RotateB);
+	ColorSDF Shape = Inset(ColorSDF(Distance, Distance, PaintFn, Point, vec3(1.0, 1.0, 1.0)), 0.05);
+	//ColorSDF Limit = Cylinder2(Point, 1.0, 2.0, PaintFn);
+	ColorSDF Limit = Sphere(Point, 1.0, PaintFn);
+	return Intersection(Shape, Limit);
+}
+
+
+ColorSDF Tangerine(vec3 Point)
+{
+	ColorSDF Shape = Wedge(Point, 30.0, 6);
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(30)), 30.0, 7));
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(60)), 30.0, 8));
+
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(90)), 30.0, 6));
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(120)), 30.0, 7));
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(150)), 30.0, 8));
+
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(180)), 30.0, 6));
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(210)), 30.0, 7));
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(240)), 30.0, 8));
+
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(270)), 30.0, 6));
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(300)), 30.0, 7));
+	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(330)), 30.0, 8));
+
+	ColorSDF Fill = Sphere(Point, 0.95, 3);
+
+	//float CutDist = -RotateY(Point, RADIANS(80)).z;
+	float CutDist = -Point.z;
+	ColorSDF CutShape = ColorSDF(CutDist, CutDist, 0, Point, vec3(1.0, 1.0, 1.0));
+	return Cut(Spack(Shape, Fill), CutShape);
+}
+
+
 ColorSDF SceneSDF(vec3 Point)
 {
 	vec3 Local = Transform3(WorldToLocal, Point);
@@ -84,11 +125,11 @@ ColorSDF SceneSDF(vec3 Point)
 	}
 	else if (ShapeFn == 1)
 	{
-		return Sphube(Local, 0.3, 0);
+		return Tangerine(Local);
 	}
 	else if (ShapeFn == 2)
 	{
-		return Sphube(Local, 0.6, 1);
+		return Sphube(Local, 0.5, 1);
 	}
 	else if (ShapeFn == 3)
 	{
@@ -139,6 +180,18 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 	else if (Shape.PaintFn == 5)
 	{
 		return Illuminate(vec3(0.088, 0.656, 0.939), Point, WorldNormal);
+	}
+	else if (Shape.PaintFn == 6)
+	{
+		return Illuminate(vec3(1.0, 0.5, 0.0), Point, WorldNormal);
+	}
+	else if (Shape.PaintFn == 7)
+	{
+		return Illuminate(vec3(1.0, 0.0, 0.5), Point, WorldNormal);
+	}
+	else if (Shape.PaintFn == 8)
+	{
+		return Illuminate(vec3(0.9, 0.5, 0.5), Point, WorldNormal);
 	}
     else if (Shape.PaintFn == -1)
     {
