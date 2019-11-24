@@ -96,14 +96,14 @@ ColorSDF SceneSDF(vec3 Point)
 	else if (ShapeFn == 1)
 	{
 		ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
-		return Cut(Box(RotateZ(Local, RADIANS(45.0)), vec3(0.8), PAINT_TANGERINE), CutShape);
+		return Cut(Sphube(RotateZ(Local, RADIANS(30.0)), 0.5, PAINT_TANGERINE), CutShape);
 	}
 	else if (ShapeFn == 2)
 	{
+		ColorSDF A = Sphere(Local - vec3(-0.25, 0.25, 0.0), 0.75, PAINT_LIME);
+		ColorSDF B = Sphere(Local - vec3(0.25, -0.25, 0.0), 0.75, PAINT_LIME);
 		ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
-		CutShape = Union(CutShape, Box(Local - vec3(0.8, 0.0, 0.0), vec3(0.5), PAINT_LIME));
-		//return Cut(Sphube(Local, 0.5, PAINT_LIME), CutShape);
-		return Cut(Sphere(Local, 1.0, PAINT_LIME), CutShape);
+		return Cut(SmoothUnion(A, B, 0.1), CutShape);
 	}
 	else if (ShapeFn == 3)
 	{
