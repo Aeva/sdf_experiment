@@ -36,6 +36,9 @@ const int FloorHeight = 100;
 const int SceneObjects = 4;
 const int ObjectsCount = FloorWidth * FloorHeight + SceneObjects;
 std::vector<ShapeInfo> Objects;
+ShapeInfo* Tangerine = nullptr;
+ShapeInfo* Lime = nullptr;
+ShapeInfo* Onion = nullptr;
 
 
 #if PROFILING
@@ -103,6 +106,9 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 	Objects.push_back(ShapeInfo(1, TRAN(3.0, 0.0, 0.0)));
 	Objects.push_back(ShapeInfo(2, TRAN(0.0, 3.0, 0.0)));
 	Objects.push_back(ShapeInfo(3, TRAN(0.0, 0.0, 3.0)));
+	Tangerine = &Objects[1];
+	Lime = &Objects[2];
+	Onion = &Objects[3];
 	double OffsetX = -double(FloorWidth) * 2.0 + 10.5;
 	double OffsetY = -double(FloorHeight) * 2.0 + 10.5;
 	for (int y = 0; y < FloorHeight; ++y)
@@ -135,6 +141,24 @@ void SDFExperiment::Render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	double Time = glfwGetTime();
 	UpdateScreenInfo();
+
+#if 1
+	{
+		double Hover = (sin(Time * 2.0) + 1.0) / 10.0;
+		Tangerine->LocalToWorld = TRAN(3.0, 0.0, Hover) * ROTZ(Time * 2.0);
+		Tangerine->WorldToLocal = mat4(inverse(Tangerine->LocalToWorld));
+	}
+	{
+		double Hover = (sin(Time * 2.5) + 1.0) / 10.0;
+		Lime->LocalToWorld = TRAN(0.0, 3.0, Hover) * ROTZ(Time * 1.8);
+		Lime->WorldToLocal = mat4(inverse(Lime->LocalToWorld));
+	}
+	{
+		double Hover = (sin(Time * 2.7) + 1.0) / 10.0;
+		Onion->LocalToWorld = TRAN(0.0, 0.0, 3.0 + Hover);
+		Onion->WorldToLocal = mat4(inverse(Onion->LocalToWorld));
+	}
+#endif
 
 	const vec3 OriginStart = vec3(15.0, 0.0, 0.0);
 	const vec3 OriginMiddle = vec3(5.0, 5.0, 0.0);
