@@ -24,9 +24,8 @@ const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
 #define PAINT_WHITE 3
 #define PAINT_ONION1 4
 #define PAINT_ONION2 5
-#define PAINT_TANGERINE1 6
-#define PAINT_TANGERINE2 7
-#define PAINT_TANGERINE3 8
+#define PAINT_TANGERINE 6
+#define PAINT_LIME 7
 
 
 ColorSDF Sphube(vec3 Point, float Alpha, int PaintFn)
@@ -87,36 +86,6 @@ ColorSDF Onion(vec3 Point)
 }
 
 
-ColorSDF Wedge(vec3 Point, float Angle, int PaintFn)
-{
-	const float Alpha = min(abs(Angle) / 180.0, 1.0);
-	const float Rad = mix(RADIANS(90.0), 0.0, Alpha);
-	const float RotateA = RotateZ(Point, Rad).y;
-	const float RotateB = RotateZ(Point, -Rad).y;
-	const float Distance = max(RotateA, RotateB);
-	ColorSDF Shape = Inset(ColorSDF(Distance, Distance, PaintFn, Point, vec3(1.0, 1.0, 1.0)), 0.02);
-	ColorSDF Limit = Sphere(Point, 0.85, PaintFn);
-	return Intersection(Shape, Limit);
-}
-
-
-ColorSDF Tangerine(vec3 Point)
-{
-	vec3 Test = vec3(abs(Point.x), -abs(Point.y), Point.z);
-	ColorSDF Shape = Wedge(Test, 30.0, PAINT_TANGERINE1);
-	Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(30)), 30.0, PAINT_TANGERINE1));
-	Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(60)), 30.0, PAINT_TANGERINE1));
-	Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(90)), 30.0, PAINT_TANGERINE1));
-
-	ColorSDF Fill = Sphere(Point, 0.9, PAINT_TANGERINE2);
-	ColorSDF Rind = Sphere(Point, 1.0, PAINT_TANGERINE3);
-
-	float CutDist = -Point.z;
-	ColorSDF CutShape = ColorSDF(CutDist, CutDist, 0, Point, vec3(1.0, 1.0, 1.0));
-	return Cut(Spack(Spack(Shape, Fill), Rind), CutShape);
-}
-
-
 ColorSDF SceneSDF(vec3 Point)
 {
 	vec3 Local = Transform3(WorldToLocal, Point);
@@ -126,11 +95,15 @@ ColorSDF SceneSDF(vec3 Point)
 	}
 	else if (ShapeFn == 1)
 	{
-		return Tangerine(Local);
+		ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
+		return Cut(Box(RotateZ(Local, RADIANS(45.0)), vec3(0.8), PAINT_TANGERINE), CutShape);
 	}
 	else if (ShapeFn == 2)
 	{
-		return Sphube(Local, 0.5, 1);
+		ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
+		CutShape = Union(CutShape, Box(Local - vec3(0.8, 0.0, 0.0), vec3(0.5), PAINT_LIME));
+		//return Cut(Sphube(Local, 0.5, PAINT_LIME), CutShape);
+		return Cut(Sphere(Local, 1.0, PAINT_LIME), CutShape);
 	}
 	else if (ShapeFn == 3)
 	{
@@ -146,6 +119,63 @@ vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal)
 }
 
 
+ColorSDF Wedge(vec3 Point, float Angle)
+{
+	const float Alpha = min(abs(Angle) / 180.0, 1.0);
+	const float Rad = mix(RADIANS(90.0), 0.0, Alpha);
+	const float RotateA = RotateZ(Point, Rad).y;
+	const float RotateB = RotateZ(Point, -Rad).y;
+	const float Distance = max(RotateA, RotateB);
+	return Inset(ColorSDF(Distance, Distance, 0, Point, vec3(1.0, 1.0, 1.0)), 0.02);
+}
+
+
+vec3 PaintTangerine(const ColorSDF Shape, const vec3 Flesh, const vec3 Fnord, const vec3 Rind)
+{
+	if (Shape.InnerDistance > -0.1)
+	{
+		return Rind;
+	}
+	else if (Shape.InnerDistance > -0.13)
+	{
+		return Fnord;
+	}
+	else
+	{
+		vec3 Test = vec3(abs(Shape.Local.x), -abs(Shape.Local.y), Shape.Local.z);
+		ColorSDF Shape = Wedge(Test, 30.0);
+		Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(30)), 30.0));
+		Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(60)), 30.0));
+		Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(90)), 30.0));
+		if (IS_SOLID(Shape.Distance))
+		{
+			return Flesh;
+		}
+		return Fnord;
+	}
+}
+
+
+vec3 PaintAxis(const ColorSDF Shape)
+{
+	float Inner = max(min(-Shape.InnerDistance, 1.0), 0.0);
+	Inner = sin(Inner * 35.0) * 0.5 + 0.5;
+	Inner = round(Inner);
+	if (Shape.PaintFn == PAINT_X_AXIS)
+	{
+		return vec3(1.0, Inner, Inner);
+	}
+	else if (Shape.PaintFn == PAINT_Y_AXIS)
+	{
+		return vec3(Inner, 1.0, Inner);
+	}
+	else if (Shape.PaintFn == PAINT_Z_AXIS)
+	{
+		return vec3(Inner, Inner, 1.0);
+	}
+}
+
+
 vec3 Paint(vec3 Point, ColorSDF Shape)
 {
     // UVW should be about -1.0 to 1.0 in range, but may go over.
@@ -154,45 +184,37 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 	//const vec3 WorldNormal = WorldNormalViaDerivatives(Point);
 	const vec3 WorldNormal = WorldNormalViaGradient(Point);
 
-	float Inner = max(min(-Shape.InnerDistance, 1.0), 0.0);
-	Inner = sin(Inner * 35.0) * 0.5 + 0.5;
-	Inner = round(Inner);
+	vec3 Color = vec3(0.0);
 
-	if (Shape.PaintFn == PAINT_X_AXIS)
+	if (Shape.PaintFn >= PAINT_X_AXIS && Shape.PaintFn <= PAINT_Z_AXIS)
 	{
-		return Illuminate(vec3(1.0, Inner, Inner), Point, WorldNormal);
-	}
-	else if (Shape.PaintFn == PAINT_Y_AXIS)
-	{
-		return Illuminate(vec3(Inner, 1.0, Inner), Point, WorldNormal);
-	}
-	else if (Shape.PaintFn == PAINT_Z_AXIS)
-	{
-		return Illuminate(vec3(Inner, Inner, 1.0), Point, WorldNormal);
+		Color = PaintAxis(Shape);
 	}
 	else if (Shape.PaintFn == PAINT_WHITE)
 	{
-		return Illuminate(vec3(1.0), Point, WorldNormal);
+		Color = vec3(1.0);
 	}
 	else if (Shape.PaintFn == PAINT_ONION1)
 	{
-		return Illuminate(vec3(0.0, 0.0, 1.0), Point, WorldNormal);
+		Color = vec3(0.0, 0.0, 1.0);
 	}
 	else if (Shape.PaintFn == PAINT_ONION2)
 	{
-		return Illuminate(vec3(0.088, 0.656, 0.939), Point, WorldNormal);
+		Color = vec3(0.088, 0.656, 0.939);
 	}
-	else if (Shape.PaintFn == PAINT_TANGERINE1)
+	else if (Shape.PaintFn == PAINT_TANGERINE)
 	{
-		return Illuminate(vec3(0.935, 0.453, 0.08), Point, WorldNormal);
+		const vec3 Flesh = vec3(0.935, 0.453, 0.08);
+		const vec3 Fnord = vec3(0.953, 0.891, 0.767);
+		const vec3 Rind  = vec3(1.0, 0.767, 0.0);
+		Color = PaintTangerine(Shape, Flesh, Fnord, Rind);
 	}
-	else if (Shape.PaintFn == PAINT_TANGERINE2)
+	else if (Shape.PaintFn == PAINT_LIME)
 	{
-		return Illuminate(vec3(0.953, 0.891, 0.767), Point, WorldNormal);
-	}
-	else if (Shape.PaintFn == PAINT_TANGERINE3)
-	{
-		return Illuminate(vec3(1.0, 0.767, 0.0), Point, WorldNormal);
+		const vec3 Flesh = vec3(0.651, 0.771, 0.137);
+		const vec3 Fnord = vec3(0.89, 0.945, 0.71);
+		const vec3 Rind  = vec3(0.552, 0.736, 0.193);
+		Color = PaintTangerine(Shape, Flesh, Fnord, Rind);
 	}
     else if (Shape.PaintFn == PAINT_DISCARD)
     {
@@ -201,7 +223,8 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
     else
     {
         return vec3(1.0, 0.0, 0.0);
-    }   
+    }
+	return Illuminate(Color, Point, WorldNormal);
 }
 
 
