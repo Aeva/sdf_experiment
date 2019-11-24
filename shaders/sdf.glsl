@@ -19,6 +19,9 @@ uniform CameraInfoBlock
 
 
 in vec4 gl_FragCoord;
+in flat mat4 WorldToLocal;
+in flat vec2 DepthRange;
+in flat int ShapeFn;
 
 
 const vec3 UpVector = vec3(0.0, 0.0, 1.0);

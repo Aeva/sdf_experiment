@@ -13,18 +13,21 @@ ShaderPipeline SplatShader;
 Buffer ScreenInfo;
 Buffer ViewInfo;
 Buffer CameraInfo;
-Buffer ClipInfo;
-Buffer ObjectInfo;
+Buffer AllObjects;
 
 
 struct ShapeInfo
 {
+	vec4 ClipBounds; // (MinX, MinY, MaxX, MaxY)
+	vec4 DepthRange; // (Min, Max, 0.0, 0.0)
 	mat4 LocalToWorld;
 	mat4 WorldToLocal;
 	int ShapeFn;
 
 	ShapeInfo(int InShapeFn, dmat4 InLocalToWorld)
-		: LocalToWorld(mat4(InLocalToWorld))
+		: ClipBounds(vec4(0.0, 0.0, 0.0, 0.0))
+		, DepthRange(vec4(0.0, 0.0, 0.0, 0.0))
+		, LocalToWorld(mat4(InLocalToWorld))
 		, WorldToLocal(mat4(inverse(InLocalToWorld)))
 		, ShapeFn(InShapeFn)
 	{}
@@ -40,11 +43,13 @@ ShapeInfo* Tangerine = nullptr;
 ShapeInfo* Lime = nullptr;
 ShapeInfo* Onion = nullptr;
 
+const size_t AllObjectsSize = sizeof(ShapeInfo) * ObjectsCount;
+
 
 #if PROFILING
 GLuint FrameStartTime;
 GLuint FrameEndTime;
-GLuint DrawTimeQueries[ObjectsCount];
+GLuint DrawTime;
 GLint GetQueryValue(GLuint Id, GLenum Param)
 {
 	GLint Value = 0;
@@ -98,7 +103,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 #if PROFILING
 	glGenQueries(1, &FrameStartTime);
 	glGenQueries(1, &FrameEndTime);
-	glGenQueries(ObjectsCount, &DrawTimeQueries[0]);
+	glGenQueries(1, &DrawTime);
 #endif
 
 	Objects.reserve(ObjectsCount);
@@ -195,19 +200,20 @@ void SDFExperiment::Render()
 	ViewInfo.Bind(GL_UNIFORM_BUFFER, 2);
 	CameraInfo.Bind(GL_UNIFORM_BUFFER, 3);
 
+	// Update the information for all objects.
 	for (int i = 0; i < ObjectsCount; ++i)
 	{
 		const float Fnord = 1.0;
 		const vec4 LocalCorners[8] = \
 		{
 			vec4(-Fnord, -Fnord, -Fnord, 1.0),
-			vec4(-Fnord,  Fnord, -Fnord, 1.0),
-			vec4( Fnord, -Fnord, -Fnord, 1.0),
-			vec4( Fnord,  Fnord, -Fnord, 1.0),
-			vec4(-Fnord, -Fnord,  Fnord, 1.0),
-			vec4(-Fnord,  Fnord,  Fnord, 1.0),
-			vec4( Fnord, -Fnord,  Fnord, 1.0),
-			vec4( Fnord,  Fnord,  Fnord, 1.0)
+				vec4(-Fnord, Fnord, -Fnord, 1.0),
+				vec4(Fnord, -Fnord, -Fnord, 1.0),
+				vec4(Fnord, Fnord, -Fnord, 1.0),
+				vec4(-Fnord, -Fnord, Fnord, 1.0),
+				vec4(-Fnord, Fnord, Fnord, 1.0),
+				vec4(Fnord, -Fnord, Fnord, 1.0),
+				vec4(Fnord, Fnord, Fnord, 1.0)
 		};
 		float MinDist;
 		float MaxDist;
@@ -235,48 +241,47 @@ void SDFExperiment::Render()
 				MaxClip = max(MaxClip, Clipped);
 			}
 		}
-		
+		Objects[i].ClipBounds = vec4(MinClip, MaxClip);
+		Objects[i].DepthRange = vec4(MinDist, MaxDist, 0.0, 0.0);
+	}
+
+	// Upload the information for all objects.
+	{
+		const size_t AlignTo = sizeof(vec4);
+		const size_t AlignedSize = (((sizeof(ShapeInfo) - 1) / AlignTo) + 1) * AlignTo;
+		const size_t TotalSize = AlignedSize * ObjectsCount;
+
+		void* BufferData = malloc(TotalSize);
+		char* Cursor = reinterpret_cast<char*>(BufferData);
+		for (int i = 0; i < ObjectsCount; ++i)
 		{
-			const size_t Vectors = 2;
-			vec4 BufferData[Vectors] = { vec4(MinClip, MaxClip), vec4(MinDist, MaxDist, 0.0, 0.0) };
-			ClipInfo.Upload((void*)&BufferData, sizeof(vec4) * Vectors);
-			ClipInfo.Bind(GL_UNIFORM_BUFFER, 4);
+			*reinterpret_cast<ShapeInfo*>(Cursor) = Objects[i];
+			Cursor += AlignedSize;
 		}
-		{
-			const size_t Bytes = sizeof(mat4) * 3;
-			char BufferData[Bytes] = { 0 };
-			void* BufferDataPtr = (void*)&BufferData;
-			{
-				mat4* LocalToWorld = reinterpret_cast<mat4*>(BufferDataPtr);
-				mat4* WorldToLocal = LocalToWorld + 1;
-				int32* ShapeFn = reinterpret_cast<int32*>(WorldToLocal + 1);
-				*LocalToWorld = Objects[i].LocalToWorld;
-				*WorldToLocal = Objects[i].WorldToLocal;
-				*ShapeFn = Objects[i].ShapeFn;
-			}
-			ObjectInfo.Upload(BufferDataPtr, Bytes);
-			ObjectInfo.Bind(GL_UNIFORM_BUFFER, 5);
-		}
+		AllObjects.Upload(BufferData, TotalSize);
+		AllObjects.Bind(GL_SHADER_STORAGE_BUFFER, 0);
+		free(BufferData);
+	}
+
+	// Draw all of the everything
+	{
 #if PROFILING
-		glBeginQuery(GL_TIME_ELAPSED, DrawTimeQueries[i]);
+		glBeginQuery(GL_TIME_ELAPSED, DrawTime);
 #endif
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, ObjectsCount);
 #if PROFILING
 		glEndQuery(GL_TIME_ELAPSED);
 #endif
 	}
+
 #if PROFILING
 	glQueryCounter(FrameEndTime, GL_TIMESTAMP);
 	{
 		GLint ElapsedFrameTimeNS = GetQueryValue(FrameEndTime, GL_QUERY_RESULT) - GetQueryValue(FrameStartTime, GL_QUERY_RESULT);
-		GLint TotalDrawTimeNS = 0;
-		for (int i = 0; i < ObjectsCount; ++i)
-		{
-			TotalDrawTimeNS += GetQueryValue(DrawTimeQueries[i], GL_QUERY_RESULT);
-		}
+		GLint TotalDrawTimeNS = GetQueryValue(DrawTime, GL_QUERY_RESULT);
 		std::cout << "GPU Times:\n"
 			<< " -   Total Draw: " << double(TotalDrawTimeNS) * 1e-6 << " ms\n"
-			<< " - Average Draw: " << double(TotalDrawTimeNS) * 1e-6 / double(ObjectsCount) << " ms\n"
+			<< " - Average Draw: " << double(TotalDrawTimeNS) / double(ObjectsCount) * 1e-6 << " ms\n"
 			<< " -  Total Frame: " << double(ElapsedFrameTimeNS) * 1e-6 << " ms\n";
 			//<< " - Approx. Idle: " << double(ElapsedFrameTimeNS - TotalDrawTimeNS) * 1e-6 << " ms\n";
 	}

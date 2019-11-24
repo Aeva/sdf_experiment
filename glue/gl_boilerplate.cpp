@@ -151,6 +151,7 @@ const std::string GetShaderExtensions(GLenum ShaderType)
 	static const std::string VertexExtensions = \
 		"#version 420\n" \
 		"#extension GL_ARB_gpu_shader5 : require\n" \
+		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
 		"#extension GL_ARB_shading_language_420pack : require\n";
 
 	static const std::string FragmentExtensions = \

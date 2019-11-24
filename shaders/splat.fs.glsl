@@ -5,14 +5,6 @@ prepend: shaders/sdf.glsl
 layout(location = 0) out vec4 OutColor;
 layout(depth_any) out float gl_FragDepth;
 
-layout(std140, binding = 5)
-uniform ObjectInfoBlock
-{
-	mat4 LocalToWorld;
-	mat4 WorldToLocal;
-	int ShapeFn;
-};
-
 
 const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
 
