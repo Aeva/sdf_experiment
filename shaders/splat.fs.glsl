@@ -17,6 +17,18 @@ uniform ObjectInfoBlock
 const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
 
 
+#define PAINT_DISCARD -1
+#define PAINT_X_AXIS 0
+#define PAINT_Y_AXIS 1
+#define PAINT_Z_AXIS 2
+#define PAINT_WHITE 3
+#define PAINT_ONION1 4
+#define PAINT_ONION2 5
+#define PAINT_TANGERINE1 6
+#define PAINT_TANGERINE2 7
+#define PAINT_TANGERINE3 8
+
+
 ColorSDF Sphube(vec3 Point, float Alpha, int PaintFn)
 {
     ColorSDF a = Sphere(Point, 1.0, PaintFn);
@@ -29,16 +41,16 @@ ColorSDF Sphube(vec3 Point, float Alpha, int PaintFn)
 
 ColorSDF Axes(vec3 Point, float Radius, float Length)
 {
-	ColorSDF Shape = Cylinder2(Point, Radius, Length, 2);
-	Shape = Union(Shape, Cylinder2(RotateY(Point, RADIANS(90.0)), Radius, Length, 0));
-	Shape = Union(Shape, Cylinder2(RotateX(Point, RADIANS(90.0)), Radius, Length, 1));
+	ColorSDF Shape = Cylinder2(Point, Radius, Length, PAINT_Z_AXIS);
+	Shape = Union(Shape, Cylinder2(RotateY(Point, RADIANS(90.0)), Radius, Length, PAINT_X_AXIS));
+	Shape = Union(Shape, Cylinder2(RotateX(Point, RADIANS(90.0)), Radius, Length, PAINT_Y_AXIS));
 	return Shape;
 }
 
 
 ColorSDF FancyBox(vec3 Point)
 {
-	ColorSDF Cube = Box(Point, vec3(1.0), 3);
+	ColorSDF Cube = Box(Point, vec3(1.0), PAINT_WHITE);
 	ColorSDF Inlay = Axes(Point, 0.8, 2.0);
 	ColorSDF Shape = Replace(Cube, Inlay);
 	Shape = Cut(Shape, Sphere((Point - vec3(1.0, 1.0, 1.0)), 1.3, 0));
@@ -51,7 +63,7 @@ ColorSDF Onion(vec3 Point)
 	vec3 Cut1 = vec3(0.8, 1.2, 0.4);
 	vec3 Cut2 = vec3(1.4, 0.8, 0.5);
 	vec3 Cut3 = vec3(0.7, 1.4, 0.3);
-	ColorSDF Shape = Cut(Sphere(Point, 1.0, 4), Sphere((Point - Cut1), 1.5, 0));
+	ColorSDF Shape = Cut(Sphere(Point, 1.0, PAINT_ONION1), Sphere((Point - Cut1), 1.5, 0));
 	bool bEven = true;
 	for (float Shell = 0.8; Shell >= 0.2; Shell-= 0.2)
 	{
@@ -60,12 +72,12 @@ ColorSDF Onion(vec3 Point)
 		ColorSDF ShellCut;
 		if (bEven)
 		{
-			Next = Sphere(Point, Shell, 4);
+			Next = Sphere(Point, Shell, PAINT_ONION1);
 			ShellCut = Sphere(Point - Cut2, 1.5, 0);
 		}
 		else
 		{
-			Next = Sphere(Point, Shell, 5);
+			Next = Sphere(Point, Shell, PAINT_ONION2);
 			ShellCut = Sphere(Point - Cut3, 1.5, 0);
 		}
 		Shape = Cut(Shape, Next);
@@ -82,8 +94,7 @@ ColorSDF Wedge(vec3 Point, float Angle, int PaintFn)
 	const float RotateA = RotateZ(Point, Rad).y;
 	const float RotateB = RotateZ(Point, -Rad).y;
 	const float Distance = max(RotateA, RotateB);
-	ColorSDF Shape = Inset(ColorSDF(Distance, Distance, PaintFn, Point, vec3(1.0, 1.0, 1.0)), 0.05);
-	//ColorSDF Limit = Cylinder2(Point, 1.0, 2.0, PaintFn);
+	ColorSDF Shape = Inset(ColorSDF(Distance, Distance, PaintFn, Point, vec3(1.0, 1.0, 1.0)), 0.02);
 	ColorSDF Limit = Sphere(Point, 1.0, PaintFn);
 	return Intersection(Shape, Limit);
 }
@@ -91,25 +102,14 @@ ColorSDF Wedge(vec3 Point, float Angle, int PaintFn)
 
 ColorSDF Tangerine(vec3 Point)
 {
-	ColorSDF Shape = Wedge(Point, 30.0, 6);
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(30)), 30.0, 7));
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(60)), 30.0, 8));
+	vec3 Test = vec3(abs(Point.x), -abs(Point.y), Point.z);
+	ColorSDF Shape = Wedge(Test, 30.0, PAINT_TANGERINE1);
+	Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(30)), 30.0, PAINT_TANGERINE1));
+	Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(60)), 30.0, PAINT_TANGERINE1));
+	Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(90)), 30.0, PAINT_TANGERINE1));
 
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(90)), 30.0, 6));
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(120)), 30.0, 7));
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(150)), 30.0, 8));
+	ColorSDF Fill = Sphere(Point, 0.999, PAINT_TANGERINE2);
 
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(180)), 30.0, 6));
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(210)), 30.0, 7));
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(240)), 30.0, 8));
-
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(270)), 30.0, 6));
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(300)), 30.0, 7));
-	Shape = Union(Shape, Wedge(RotateZ(Point, RADIANS(330)), 30.0, 8));
-
-	ColorSDF Fill = Sphere(Point, 0.95, 3);
-
-	//float CutDist = -RotateY(Point, RADIANS(80)).z;
 	float CutDist = -Point.z;
 	ColorSDF CutShape = ColorSDF(CutDist, CutDist, 0, Point, vec3(1.0, 1.0, 1.0));
 	return Cut(Spack(Shape, Fill), CutShape);
@@ -157,43 +157,43 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 	Inner = sin(Inner * 35.0) * 0.5 + 0.5;
 	Inner = round(Inner);
 
-	if (Shape.PaintFn == 0)
+	if (Shape.PaintFn == PAINT_X_AXIS)
 	{
 		return Illuminate(vec3(1.0, Inner, Inner), Point, WorldNormal);
 	}
-	else if (Shape.PaintFn == 1)
+	else if (Shape.PaintFn == PAINT_Y_AXIS)
 	{
 		return Illuminate(vec3(Inner, 1.0, Inner), Point, WorldNormal);
 	}
-	else if (Shape.PaintFn == 2)
+	else if (Shape.PaintFn == PAINT_Z_AXIS)
 	{
 		return Illuminate(vec3(Inner, Inner, 1.0), Point, WorldNormal);
 	}
-	else if (Shape.PaintFn == 3)
+	else if (Shape.PaintFn == PAINT_WHITE)
 	{
 		return Illuminate(vec3(1.0), Point, WorldNormal);
 	}
-	else if (Shape.PaintFn == 4)
+	else if (Shape.PaintFn == PAINT_ONION1)
 	{
 		return Illuminate(vec3(0.0, 0.0, 1.0), Point, WorldNormal);
 	}
-	else if (Shape.PaintFn == 5)
+	else if (Shape.PaintFn == PAINT_ONION2)
 	{
 		return Illuminate(vec3(0.088, 0.656, 0.939), Point, WorldNormal);
 	}
-	else if (Shape.PaintFn == 6)
+	else if (Shape.PaintFn == PAINT_TANGERINE1)
 	{
-		return Illuminate(vec3(1.0, 0.5, 0.0), Point, WorldNormal);
+		return Illuminate(vec3(0.935, 0.453, 0.08), Point, WorldNormal);
 	}
-	else if (Shape.PaintFn == 7)
+	else if (Shape.PaintFn == PAINT_TANGERINE2)
 	{
-		return Illuminate(vec3(1.0, 0.0, 0.5), Point, WorldNormal);
+		return Illuminate(vec3(0.953, 0.891, 0.767), Point, WorldNormal);
 	}
-	else if (Shape.PaintFn == 8)
+	else if (Shape.PaintFn == PAINT_TANGERINE3)
 	{
-		return Illuminate(vec3(0.9, 0.5, 0.5), Point, WorldNormal);
+		return Illuminate(vec3(1.0, 0.767, 0.0), Point, WorldNormal);
 	}
-    else if (Shape.PaintFn == -1)
+    else if (Shape.PaintFn == PAINT_DISCARD)
     {
 		discard;
     }
