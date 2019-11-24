@@ -95,7 +95,7 @@ ColorSDF Wedge(vec3 Point, float Angle, int PaintFn)
 	const float RotateB = RotateZ(Point, -Rad).y;
 	const float Distance = max(RotateA, RotateB);
 	ColorSDF Shape = Inset(ColorSDF(Distance, Distance, PaintFn, Point, vec3(1.0, 1.0, 1.0)), 0.02);
-	ColorSDF Limit = Sphere(Point, 1.0, PaintFn);
+	ColorSDF Limit = Sphere(Point, 0.85, PaintFn);
 	return Intersection(Shape, Limit);
 }
 
@@ -108,11 +108,12 @@ ColorSDF Tangerine(vec3 Point)
 	Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(60)), 30.0, PAINT_TANGERINE1));
 	Shape = Union(Shape, Wedge(RotateZ(Test, RADIANS(90)), 30.0, PAINT_TANGERINE1));
 
-	ColorSDF Fill = Sphere(Point, 0.999, PAINT_TANGERINE2);
+	ColorSDF Fill = Sphere(Point, 0.9, PAINT_TANGERINE2);
+	ColorSDF Rind = Sphere(Point, 1.0, PAINT_TANGERINE3);
 
 	float CutDist = -Point.z;
 	ColorSDF CutShape = ColorSDF(CutDist, CutDist, 0, Point, vec3(1.0, 1.0, 1.0));
-	return Cut(Spack(Shape, Fill), CutShape);
+	return Cut(Spack(Spack(Shape, Fill), Rind), CutShape);
 }
 
 
