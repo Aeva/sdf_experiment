@@ -98,7 +98,7 @@ ColorSDF SceneSDF(vec3 Point)
 	else if (ShapeFn == 1)
 	{
 		ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
-		return Cut(Sphube(RotateZ(Local, RADIANS(30.0)), 0.5, PAINT_TANGERINE), CutShape);
+		return Cut(Sphube(Local, 0.5, PAINT_TANGERINE), CutShape);
 	}
 	else if (ShapeFn == 2)
 	{
