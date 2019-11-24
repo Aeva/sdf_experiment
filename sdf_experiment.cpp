@@ -2,6 +2,9 @@
 #define GLM_FORCE_SWIZZLE
 #include "glm/glm.hpp"
 #include "glm/ext.hpp"
+#if PROFILING
+#include <iostream>
+#endif
 
 using namespace glm;
 
@@ -35,6 +38,19 @@ const ShapeInfo Objects[ObjectsCount] = \
 	ShapeInfo(2, TRAN(0.0, 3.0, 0.0)),
 	ShapeInfo(3, TRAN(0.0, 0.0, 3.0))
 };
+
+
+#if PROFILING
+GLuint FrameStartTime;
+GLuint FrameEndTime;
+GLuint DrawTimeQueries[ObjectsCount];
+GLint GetQueryValue(GLuint Id, GLenum Param)
+{
+	GLint Value = 0;
+	glGetQueryObjectiv(Id, Param, &Value);
+	return Value;
+}
+#endif
 
 
 void UpdateScreenInfo()
@@ -78,6 +94,12 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 	glDepthRange(1.0, 0.0);
 
+#if PROFILING
+	glGenQueries(1, &FrameStartTime);
+	glGenQueries(1, &FrameEndTime);
+	glGenQueries(ObjectsCount, &DrawTimeQueries[0]);
+#endif
+
 	return StatusCode::PASS;
 }
 
@@ -90,6 +112,9 @@ void SDFExperiment::WindowIsDirty()
 
 void SDFExperiment::Render()
 {
+#if PROFILING
+	glQueryCounter(FrameStartTime, GL_TIMESTAMP);
+#endif
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	double Time = glfwGetTime();
 	UpdateScreenInfo();
@@ -191,6 +216,28 @@ void SDFExperiment::Render()
 			ObjectInfo.Upload(BufferDataPtr, Bytes);
 			ObjectInfo.Bind(GL_UNIFORM_BUFFER, 5);
 		}
+#if PROFILING
+		glBeginQuery(GL_TIME_ELAPSED, DrawTimeQueries[i]);
+#endif
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+#if PROFILING
+		glEndQuery(GL_TIME_ELAPSED);
+#endif
 	}
+#if PROFILING
+	glQueryCounter(FrameEndTime, GL_TIMESTAMP);
+	{
+		GLint ElapsedFrameTimeNS = GetQueryValue(FrameEndTime, GL_QUERY_RESULT) - GetQueryValue(FrameStartTime, GL_QUERY_RESULT);
+		GLint TotalDrawTimeNS = 0;
+		for (int i = 0; i < ObjectsCount; ++i)
+		{
+			TotalDrawTimeNS += GetQueryValue(DrawTimeQueries[i], GL_QUERY_RESULT);
+		}
+		std::cout << "GPU Times:\n"
+			<< " -   Total Draw: " << double(TotalDrawTimeNS) * 1e-6 << " ms\n"
+			<< " - Average Draw: " << double(TotalDrawTimeNS) * 1e-6 / double(ObjectsCount) << " ms\n"
+			<< " -  Total Frame: " << double(ElapsedFrameTimeNS) * 1e-6 << " ms\n";
+			//<< " - Approx. Idle: " << double(ElapsedFrameTimeNS - TotalDrawTimeNS) * 1e-6 << " ms\n";
+	}
+#endif
 }
