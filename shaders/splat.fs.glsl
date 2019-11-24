@@ -26,6 +26,8 @@ const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
 #define PAINT_ONION2 5
 #define PAINT_TANGERINE 6
 #define PAINT_LIME 7
+#define PAINT_FLOOR1 8
+#define PAINT_FLOOR2 9
 
 
 ColorSDF Sphube(vec3 Point, float Alpha, int PaintFn)
@@ -108,6 +110,14 @@ ColorSDF SceneSDF(vec3 Point)
 	else if (ShapeFn == 3)
 	{
 		return Onion(Local);
+	}
+	else if (ShapeFn == 4)
+	{
+		return Box(Local, vec3(1.0), PAINT_FLOOR1);
+	}
+	else if (ShapeFn == 5)
+	{
+		return Box(Local, vec3(1.0), PAINT_FLOOR2);
 	}
 }
 
@@ -215,6 +225,14 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 		const vec3 Fnord = vec3(0.89, 0.945, 0.71);
 		const vec3 Rind  = vec3(0.552, 0.736, 0.193);
 		Color = PaintTangerine(Shape, Flesh, Fnord, Rind);
+	}
+	else if (Shape.PaintFn == PAINT_FLOOR1)
+	{
+		Color = vec3(0.0, (Point.z + 2.0) / 2.0, 0.0);
+	}
+	else if (Shape.PaintFn == PAINT_FLOOR2)
+	{
+		Color = vec3((Point.z + 2.0) / 2.0);
 	}
     else if (Shape.PaintFn == PAINT_DISCARD)
     {

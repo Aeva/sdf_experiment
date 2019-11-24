@@ -2,6 +2,7 @@
 #define GLM_FORCE_SWIZZLE
 #include "glm/glm.hpp"
 #include "glm/ext.hpp"
+#include <cstdlib>
 #if PROFILING
 #include <iostream>
 #endif
@@ -30,14 +31,11 @@ struct ShapeInfo
 };
 
 
-const int ObjectsCount = 4;
-const ShapeInfo Objects[ObjectsCount] = \
-{
-	ShapeInfo(0, TRAN(0.0, 0.0, 0.0)),
-	ShapeInfo(1, TRAN(3.0, 0.0, 0.0)),
-	ShapeInfo(2, TRAN(0.0, 3.0, 0.0)),
-	ShapeInfo(3, TRAN(0.0, 0.0, 3.0))
-};
+const int FloorWidth = 100;
+const int FloorHeight = 100;
+const int SceneObjects = 4;
+const int ObjectsCount = FloorWidth * FloorHeight + SceneObjects;
+std::vector<ShapeInfo> Objects;
 
 
 #if PROFILING
@@ -99,6 +97,25 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 	glGenQueries(1, &FrameEndTime);
 	glGenQueries(ObjectsCount, &DrawTimeQueries[0]);
 #endif
+
+	Objects.reserve(ObjectsCount);
+	Objects.push_back(ShapeInfo(0, TRAN(0.0, 0.0, 0.0)));
+	Objects.push_back(ShapeInfo(1, TRAN(3.0, 0.0, 0.0)));
+	Objects.push_back(ShapeInfo(2, TRAN(0.0, 3.0, 0.0)));
+	Objects.push_back(ShapeInfo(3, TRAN(0.0, 0.0, 3.0)));
+	double OffsetX = -double(FloorWidth) * 2.0 + 10.5;
+	double OffsetY = -double(FloorHeight) * 2.0 + 10.5;
+	for (int y = 0; y < FloorHeight; ++y)
+	{
+		for (int x = 0; x < FloorWidth; ++x)
+		{
+			int Fnord = (y % 2 + x) % 2;
+			double WorldX = OffsetX + double(x) * 2.0;
+			double WorldY = OffsetY + double(y) * 2.0;
+			double WorldZ = (double(rand() % 1000) / 1000.0) * 0.5;
+			Objects.push_back(ShapeInfo(4 + Fnord, TRAN(WorldX, WorldY, -2.0 - WorldZ)));
+		}
+	}
 
 	return StatusCode::PASS;
 }
