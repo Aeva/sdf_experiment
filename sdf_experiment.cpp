@@ -18,18 +18,43 @@ Buffer AllObjects;
 
 struct ShapeInfo
 {
-	vec4 ClipBounds; // (MinX, MinY, MaxX, MaxY)
-	vec4 DepthRange; // (Min, Max, 0.0, 0.0)
 	mat4 LocalToWorld;
 	mat4 WorldToLocal;
 	int ShapeFn;
 
 	ShapeInfo(int InShapeFn, dmat4 InLocalToWorld)
-		: ClipBounds(vec4(0.0, 0.0, 0.0, 0.0))
-		, DepthRange(vec4(0.0, 0.0, 0.0, 0.0))
-		, LocalToWorld(mat4(InLocalToWorld))
+		: LocalToWorld(mat4(InLocalToWorld))
 		, WorldToLocal(mat4(inverse(InLocalToWorld)))
 		, ShapeFn(InShapeFn)
+	{}
+};
+
+
+struct ShapeUploadInfo
+{
+	vec4 ClipBounds; // (MinX, MinY, MaxX, MaxY)
+	vec4 DepthRange; // (Min, Max, 0.0, 0.0)
+	mat4 LocalToWorld;
+	mat4 WorldToLocal;
+	int ShapeFn;
+	int Padding[3];
+
+	ShapeUploadInfo()
+		: ClipBounds(vec4(0.0))
+		, DepthRange(vec4(0.0))
+		, LocalToWorld(mat4(0.0))
+		, WorldToLocal(mat4(0.0))
+		, ShapeFn(0)
+		, Padding{ 0 }
+	{}
+
+	ShapeUploadInfo(ShapeInfo InShape, vec4 InClipBounds, vec2 InDepthRange)
+		: ClipBounds(InClipBounds)
+		, DepthRange(vec4(InDepthRange, 0.0, 0.0))
+		, LocalToWorld(InShape.LocalToWorld)
+		, WorldToLocal(InShape.WorldToLocal)
+		, ShapeFn(InShape.ShapeFn)
+		, Padding{ 0 }
 	{}
 };
 
@@ -201,6 +226,8 @@ void SDFExperiment::Render()
 	CameraInfo.Bind(GL_UNIFORM_BUFFER, 3);
 
 	// Update the information for all objects.
+	std::vector<ShapeUploadInfo> VisibleObjects;
+	VisibleObjects.reserve(ObjectsCount);
 	for (int i = 0; i < ObjectsCount; ++i)
 	{
 		const float Fnord = 1.0;
@@ -241,34 +268,28 @@ void SDFExperiment::Render()
 				MaxClip = max(MaxClip, Clipped);
 			}
 		}
-		Objects[i].ClipBounds = vec4(MinClip, MaxClip);
-		Objects[i].DepthRange = vec4(MinDist, MaxDist, 0.0, 0.0);
-	}
-
-	// Upload the information for all objects.
-	{
-		const size_t AlignTo = sizeof(vec4);
-		const size_t AlignedSize = (((sizeof(ShapeInfo) - 1) / AlignTo) + 1) * AlignTo;
-		const size_t TotalSize = AlignedSize * ObjectsCount;
-
-		void* BufferData = malloc(TotalSize);
-		char* Cursor = reinterpret_cast<char*>(BufferData);
-		for (int i = 0; i < ObjectsCount; ++i)
+		if (MinDist >= 1.0 && MinClip.x <= 1.0 && MinClip.y <= 1.0 && MaxClip.x >= -1.0 && MaxClip.y >= -1.0)
 		{
-			*reinterpret_cast<ShapeInfo*>(Cursor) = Objects[i];
-			Cursor += AlignedSize;
+			VisibleObjects.emplace_back(Objects[i], vec4(MinClip, MaxClip), vec2(MinDist, MaxDist));
 		}
-		AllObjects.Upload(BufferData, TotalSize);
-		AllObjects.Bind(GL_SHADER_STORAGE_BUFFER, 0);
-		free(BufferData);
 	}
+
+	// Upload the information for all visible objects.
+	const int VisibleObjectsCount = VisibleObjects.size();
+	if (VisibleObjectsCount < ObjectsCount)
+	{
+		VisibleObjects.resize(ObjectsCount);
+	}
+	AllObjects.Upload((void*)VisibleObjects.data(), sizeof(ShapeUploadInfo) * ObjectsCount);
+	AllObjects.Bind(GL_SHADER_STORAGE_BUFFER, 0);
 
 	// Draw all of the everything
+	if (VisibleObjectsCount > 0)
 	{
 #if PROFILING
 		glBeginQuery(GL_TIME_ELAPSED, DrawTime);
 #endif
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, ObjectsCount);
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, VisibleObjectsCount);
 #if PROFILING
 		glEndQuery(GL_TIME_ELAPSED);
 #endif
@@ -276,12 +297,13 @@ void SDFExperiment::Render()
 
 #if PROFILING
 	glQueryCounter(FrameEndTime, GL_TIMESTAMP);
+	std::cout << "Objects Drawn: " << VisibleObjectsCount << "\n";
 	{
 		GLint ElapsedFrameTimeNS = GetQueryValue(FrameEndTime, GL_QUERY_RESULT) - GetQueryValue(FrameStartTime, GL_QUERY_RESULT);
 		GLint TotalDrawTimeNS = GetQueryValue(DrawTime, GL_QUERY_RESULT);
 		std::cout << "GPU Times:\n"
 			<< " -   Total Draw: " << double(TotalDrawTimeNS) * 1e-6 << " ms\n"
-			<< " - Average Draw: " << double(TotalDrawTimeNS) / double(ObjectsCount) * 1e-6 << " ms\n"
+			<< " - Average Draw: " << double(TotalDrawTimeNS) / double(VisibleObjectsCount) * 1e-6 << " ms\n"
 			<< " -  Total Frame: " << double(ElapsedFrameTimeNS) * 1e-6 << " ms\n";
 			//<< " - Approx. Idle: " << double(ElapsedFrameTimeNS - TotalDrawTimeNS) * 1e-6 << " ms\n";
 	}
