@@ -51,7 +51,7 @@ ColorSDF CubeTraceSceneSDF(vec3 LocalPosition);
 // Misc Math
 // ---------
 
-#define IS_SOLID(val) val < AlmostZero
+#define IS_SOLID(val) (val < AlmostZero)
 #define RADIANS(Degrees) (Degrees * 0.017453292519943295)
 
 
@@ -140,7 +140,7 @@ void CubeTrace(out vec3 Position, out ColorSDF Scene)
 	const vec3 LocalRayStart = Transform3(WorldToLocal, WorldRayStart);
 	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
 
-	const vec3 BoxExtent = vec3(1.0); // TODO
+	const vec3 BoxExtent = vec3(1.0); // TODO: This shouldn't be hard coded.
 
 	if (abs(LocalRayStart.x) <= BoxExtent.x &&
 		abs(LocalRayStart.y) <= BoxExtent.y &&
@@ -151,8 +151,48 @@ void CubeTrace(out vec3 Position, out ColorSDF Scene)
 		return;
 	}
 
-	Position = WorldRayStart;
-	Scene = DiscardSDF;
+	const vec3 Fnord1 = (-BoxExtent - LocalRayStart) / LocalRayDir;
+	const vec3 Fnord2 = (BoxExtent - LocalRayStart) / LocalRayDir;
+	const float RayDists[6] = \
+	{
+		Fnord1.x,
+		Fnord1.y,
+		Fnord1.z,
+		Fnord2.x,
+		Fnord2.y,
+		Fnord2.z
+	};
+
+	vec3 LocalPosition = RayDists[1] * LocalRayDir + LocalRayStart;
+	Scene = CubeTraceSceneSDF(LocalPosition);
+	float MinAccepted = RayDists[0];
+	bool bFound = IS_SOLID(Scene.Distance);
+
+	for (int i = 1; i < 6; ++i)
+	{
+		if (!IS_SOLID(Scene.Distance) || RayDists[i] < MinAccepted)
+		{
+			vec3 TestPosition = RayDists[i] * LocalRayDir + LocalRayStart;
+			ColorSDF TestSDF = CubeTraceSceneSDF(TestPosition);
+			if (IS_SOLID(TestSDF.Distance))
+			{
+				LocalPosition = TestPosition;
+				Scene = TestSDF;
+				MinAccepted = RayDists[i];
+				bFound = true;
+			}
+		}
+	}
+
+	if (bFound)
+	{
+		Position = Transform3(LocalToWorld, LocalPosition);
+	}
+	else
+	{
+		Position = vec3(0.0);
+		Scene = DiscardSDF;
+	}
 }
 
 

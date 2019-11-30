@@ -22,7 +22,8 @@ const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
 #define PAINT_FLOOR2 9
 
 
-#define ENABLE_CUBETRACE 0
+#define ENABLE_CUBETRACE 1
+
 
 ColorSDF Sphube(vec3 Point, float Alpha, int PaintFn)
 {
@@ -104,12 +105,10 @@ ColorSDF SceneSDF(vec3 Local)
 	{
 		return Onion(Local);
 	}
-#if !ENABLE_CUBETRACE
 	else
 	{
 		return CubeTraceSceneSDF(Local);
 	}
-#endif
 }
 
 
