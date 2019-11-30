@@ -19,6 +19,7 @@ uniform CameraInfoBlock
 
 
 in vec4 gl_FragCoord;
+in flat mat4 LocalToWorld;
 in flat mat4 WorldToLocal;
 in flat vec2 DepthRange;
 in flat int ShapeFn;
@@ -39,7 +40,11 @@ struct ColorSDF
 };
 
 
-ColorSDF SceneSDF(vec3 Position);
+const ColorSDF DiscardSDF = ColorSDF(0.0, 0.0, -1, vec3(0.0), vec3(0.0));
+
+
+ColorSDF SceneSDF(vec3 LocalPosition);
+ColorSDF CubeTraceSceneSDF(vec3 LocalPosition);
 
 
 // ---------
@@ -89,11 +94,14 @@ vec3 RotateZ(vec3 Point, float Radians)
 
 vec3 WorldNormalViaGradient(vec3 Point)
 {
+	const vec3 Local  = Transform3(WorldToLocal, Point);
+	const vec3 LocalM = Transform3(WorldToLocal, Point - AlmostZero);
+	const vec3 LocalP = Transform3(WorldToLocal, Point + AlmostZero);
 #define SDF(X, Y, Z) SceneSDF(vec3(X, Y, Z)).Distance
 	return normalize(vec3(
-		SDF(Point.x + AlmostZero, Point.y, Point.z) - SDF(Point.x - AlmostZero, Point.y, Point.z),
-		SDF(Point.x, Point.y + AlmostZero, Point.z) - SDF(Point.x, Point.y - AlmostZero, Point.z),
-		SDF(Point.x, Point.y, Point.z + AlmostZero) - SDF(Point.x, Point.y, Point.z - AlmostZero)));
+		SDF(LocalP.x, Local.y, Local.z) - SDF(LocalM.x, Local.y, Local.z),
+		SDF(Local.x, LocalP.y, Local.z) - SDF(Local.x, LocalM.y, Local.z),
+		SDF(Local.x, Local.y, LocalP.z) - SDF(Local.x, Local.y, LocalM.z)));
 #undef SDF
 }
 
@@ -118,31 +126,65 @@ vec3 GetRayDir()
 }
 
 
-void RayTrace(out vec3 Position, out ColorSDF Scene)
+vec3 GetStartPosition(const vec3 RayDir)
 {
-	const vec3 RayDir = GetRayDir();
 	const float Fudge = 0.2;
-	Position = RayDir * max(DepthRange.x - Fudge, 0.0) + CameraOrigin.xyz;
+	return RayDir * max(DepthRange.x - Fudge, 0.0) + CameraOrigin.xyz;
+}
+
+
+void CubeTrace(out vec3 Position, out ColorSDF Scene)
+{
+	const vec3 WorldRayDir = GetRayDir();
+	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
+	const vec3 LocalRayStart = Transform3(WorldToLocal, WorldRayStart);
+	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
+
+	const vec3 BoxExtent = vec3(1.0); // TODO
+
+	if (abs(LocalRayStart.x) <= BoxExtent.x &&
+		abs(LocalRayStart.y) <= BoxExtent.y &&
+		abs(LocalRayStart.z) <= BoxExtent.z)
+	{
+		Position = WorldRayStart;
+		Scene = CubeTraceSceneSDF(LocalRayStart);
+		return;
+	}
+
+	Position = WorldRayStart;
+	Scene = DiscardSDF;
+}
+
+
+void RayMarch(out vec3 Position, out ColorSDF Scene)
+{
+	const vec3 WorldRayDir = GetRayDir();
+	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
+	vec3 LocalPosition = Transform3(WorldToLocal, WorldRayStart);
+	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalPosition);
+	const vec3 LocalCameraOrigin = Transform3(WorldToLocal, CameraOrigin.xyz);
 
 	for (int Step = 0; Step <= MaxIterations; ++Step)
     {
-		Scene = SceneSDF(Position);
-		Position += RayDir * Scene.Distance;
+		Scene = SceneSDF(LocalPosition);
+		LocalPosition += LocalRayDir * Scene.Distance;
 		if (IS_SOLID(Scene.Distance))
         {
-			Scene = SceneSDF(Position);
+			Scene = SceneSDF(LocalPosition);
 			if (Scene.InnerDistance == Scene.Distance)
 			{
 				Scene.InnerDistance = 0.0;
 			}
 			Scene.Distance = 0.0;
+			Position = Transform3(LocalToWorld, LocalPosition);
 			return;
         }
-		if (distance(Position, CameraOrigin.xyz) > DepthRange.y)
+		if (distance(LocalPosition, LocalCameraOrigin) > DepthRange.y)
 		{
 			break;
 		}
     }
+	Position = vec3(0.0);
 	Scene.PaintFn = -1;
 }
 

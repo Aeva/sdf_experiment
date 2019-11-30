@@ -22,6 +22,8 @@ const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
 #define PAINT_FLOOR2 9
 
 
+#define ENABLE_CUBETRACE 0
+
 ColorSDF Sphube(vec3 Point, float Alpha, int PaintFn)
 {
     ColorSDF a = Sphere(Point, 1.0, PaintFn);
@@ -80,9 +82,8 @@ ColorSDF Onion(vec3 Point)
 }
 
 
-ColorSDF SceneSDF(vec3 Point)
+ColorSDF SceneSDF(vec3 Local)
 {
-	vec3 Local = Transform3(WorldToLocal, Point);
 	if (ShapeFn == 0)
 	{
 		return FancyBox(Local);
@@ -103,7 +104,18 @@ ColorSDF SceneSDF(vec3 Point)
 	{
 		return Onion(Local);
 	}
-	else if (ShapeFn == 4)
+#if !ENABLE_CUBETRACE
+	else
+	{
+		return CubeTraceSceneSDF(Local);
+	}
+#endif
+}
+
+
+ColorSDF CubeTraceSceneSDF(vec3 Local)
+{
+	if (ShapeFn == 4)
 	{
 		return Box(Local, vec3(1.0), PAINT_FLOOR1);
 	}
@@ -242,7 +254,16 @@ void main()
 {
     vec3 Position;
     ColorSDF Scene;
-    RayTrace(Position, Scene);
+#if ENABLE_CUBETRACE
+	if (ShapeFn == 4 || ShapeFn == 5)
+	{
+		CubeTrace(Position, Scene);
+	}
+	else
+#endif
+	{
+		RayMarch(Position, Scene);
+	}
 	OutColor = vec4(Paint(Position, Scene), 1.0);
 	gl_FragDepth = 1.0 / distance(Position, CameraOrigin.xyz);
 }

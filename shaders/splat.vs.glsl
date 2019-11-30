@@ -9,6 +9,7 @@ out gl_PerVertex
 };
 
 
+out flat mat4 LocalToWorld;
 out flat mat4 WorldToLocal;
 out flat vec2 DepthRange;
 out flat int ShapeFn;
@@ -41,6 +42,7 @@ void main()
 0, 1
 1, 0
 */
+	LocalToWorld = Objects[gl_InstanceID].LocalToWorld;
 	WorldToLocal = Objects[gl_InstanceID].WorldToLocal;
 	DepthRange = Objects[gl_InstanceID].DepthRange.xy;
 	ShapeFn = Objects[gl_InstanceID].ShapeFn;
