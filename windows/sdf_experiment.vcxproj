@@ -84,7 +84,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\loadpng\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -100,7 +100,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\loadpng\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -114,8 +114,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG_BUILD;</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\loadpng\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG_BUILD</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -124,7 +124,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\loadpng\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
     </ClCompile>
@@ -135,6 +135,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\dependencies\glad\src\glad.c" />
+    <ClCompile Include="..\dependencies\loadpng\src\lodepng.cpp" />
     <ClCompile Include="..\glue\errors.cpp" />
     <ClCompile Include="..\glue\gl_boilerplate.cpp" />
     <ClCompile Include="..\glue\init.cpp" />

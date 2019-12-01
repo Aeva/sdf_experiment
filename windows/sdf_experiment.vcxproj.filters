@@ -10,6 +10,9 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{5ff194be-39fb-4e94-a81c-15634f32ec97}</UniqueIdentifier>
     </Filter>
+    <Filter Include="LoadPNG">
+      <UniqueIdentifier>{229aa8d4-84f3-4a05-a3c1-69d3bb4c5820}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\glue\errors.cpp">
@@ -24,6 +27,9 @@
     <ClCompile Include="..\sdf_experiment.cpp" />
     <ClCompile Include="..\dependencies\glad\src\glad.c">
       <Filter>glad</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dependencies\loadpng\src\lodepng.cpp">
+      <Filter>LoadPNG</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
