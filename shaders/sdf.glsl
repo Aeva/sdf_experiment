@@ -153,7 +153,7 @@ void CubeTrace(out vec3 Position, out ColorSDF Scene)
 
 	const vec3 Fnord1 = (-BoxExtent - LocalRayStart) / LocalRayDir;
 	const vec3 Fnord2 = (BoxExtent - LocalRayStart) / LocalRayDir;
-	const float RayDists[6] = \
+	float RayDists[6] = \
 	{
 		Fnord1.x,
 		Fnord1.y,
@@ -163,36 +163,30 @@ void CubeTrace(out vec3 Position, out ColorSDF Scene)
 		Fnord2.z
 	};
 
-	vec3 LocalPosition = RayDists[1] * LocalRayDir + LocalRayStart;
-	Scene = CubeTraceSceneSDF(LocalPosition);
-	float MinAccepted = RayDists[0];
-	bool bFound = IS_SOLID(Scene.Distance);
-
-	for (int i = 1; i < 6; ++i)
+	for (int t = 0; t < 5; ++t)
 	{
-		if (!IS_SOLID(Scene.Distance) || RayDists[i] < MinAccepted)
+		for (int i = 0; i < 5; ++i)
 		{
-			vec3 TestPosition = RayDists[i] * LocalRayDir + LocalRayStart;
-			ColorSDF TestSDF = CubeTraceSceneSDF(TestPosition);
-			if (IS_SOLID(TestSDF.Distance))
-			{
-				LocalPosition = TestPosition;
-				Scene = TestSDF;
-				MinAccepted = RayDists[i];
-				bFound = true;
-			}
+			const float a = RayDists[i];
+			const float b = RayDists[i+1];
+			RayDists[i] = min(a, b);
+			RayDists[i+1] = max(a, b);
 		}
 	}
 
-	if (bFound)
+	for (int i = 1; i < 6; ++i)
 	{
-		Position = Transform3(LocalToWorld, LocalPosition);
+		const vec3 LocalPosition = RayDists[i] * LocalRayDir + LocalRayStart;
+		Scene = CubeTraceSceneSDF(LocalPosition);
+		if (IS_SOLID(Scene.Distance))
+		{
+			Position = Transform3(LocalToWorld, LocalPosition);
+			return;
+		}
 	}
-	else
-	{
-		Position = vec3(0.0);
-		Scene = DiscardSDF;
-	}
+
+	Position = vec3(0.0);
+	Scene = DiscardSDF;
 }
 
 
