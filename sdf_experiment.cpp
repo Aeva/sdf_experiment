@@ -61,7 +61,8 @@ struct ShapeUploadInfo
 const int FloorWidth = 100;
 const int FloorHeight = 100;
 const int SceneObjects = 4;
-const int ObjectsCount = FloorWidth * FloorHeight + SceneObjects;
+const int Trees = 100;
+const int ObjectsCount = FloorWidth * FloorHeight + SceneObjects + Trees;
 std::vector<ShapeInfo> Objects;
 ShapeInfo* Tangerine = nullptr;
 ShapeInfo* Lime = nullptr;
@@ -120,7 +121,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_GREATER);
 	glClearDepth(0.0);
-	glClearColor(0.1, 0.1, 0.1, 1.0);
+	glClearColor(0.729, 0.861, 0.951, 1.0);
 	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 	glDepthRange(1.0, 0.0);
 
@@ -135,22 +136,50 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 	Objects.push_back(ShapeInfo(1, vec3(1.0), TRAN(3.0, 0.0, 0.0)));
 	Objects.push_back(ShapeInfo(2, vec3(1.0), TRAN(0.0, 3.0, 0.0)));
 	Objects.push_back(ShapeInfo(3, vec3(1.0), TRAN(0.0, 0.0, 3.0)));
+
+	const double OffsetX = -double(FloorWidth) * 2.0 + 20.5;
+	const double OffsetY = -double(FloorHeight) * 2.0 + 20.5;
+	const vec2 RiverCenter = vec2(7.5, 7.5);
+	const double TileSize = 1.0;
+	bool bIsOdd = false;
+	for (double y = 0; y < FloorHeight; y += TileSize)
+	{
+		for (double x = 0; x < FloorWidth; x += TileSize)
+		{
+			const double WorldX = x * 2.0 + OffsetX;
+			const double WorldY = y * 2.0 + OffsetY;
+
+			const double Distance = distance(RiverCenter, vec2(WorldX, WorldY));
+			const bool bIsRiver = Distance > 12.0 && Distance < 25.0;
+
+			const int PaintFn = bIsRiver ? 6 + int(bIsOdd) : 4 + int(bIsOdd);
+			const double Turbulance = bIsRiver ? 0.25 : 0.5;
+			const double Offset = bIsRiver ? 0.5 : 0.0;
+
+			const double WorldZ = (double(rand() % 1000) / 1000.0) * Turbulance + Offset;
+			Objects.push_back(ShapeInfo(PaintFn, vec3(TileSize, TileSize, 1.0), TRAN(WorldX, WorldY, -2.0 - WorldZ)));
+			bIsOdd = !bIsOdd;
+		}
+	}
+
+	for (int t = 0; t < Trees; ++t)
+	{
+		vec2 WorldPos = vec2(0.0, 0.0);
+		while (distance(RiverCenter, WorldPos) < 34.0)
+		{
+			const double RandA = (double(rand() % 1000) / 1000.0) * -100.0;
+			const double RandB = (double(rand() % 1000) / 1000.0) * -100.0;
+			WorldPos = vec2(RandA, RandB);
+		}
+		const double TreeHeight = 10.0;
+		const double ExtentZ = TreeHeight * 0.5;
+		const double OffsetZ = ExtentZ - 2.0;
+		Objects.push_back(ShapeInfo(8, vec3(2.0, 2.0, 4.0), TRAN(WorldPos.x, WorldPos.y, OffsetZ)));
+	}
+
 	Tangerine = &Objects[1];
 	Lime = &Objects[2];
 	Onion = &Objects[3];
-	double OffsetX = -double(FloorWidth) * 2.0 + 10.5;
-	double OffsetY = -double(FloorHeight) * 2.0 + 10.5;
-	for (int y = 0; y < FloorHeight; ++y)
-	{
-		for (int x = 0; x < FloorWidth; ++x)
-		{
-			int Fnord = (y % 2 + x) % 2;
-			double WorldX = OffsetX + double(x) * 2.0;
-			double WorldY = OffsetY + double(y) * 2.0;
-			double WorldZ = (double(rand() % 1000) / 1000.0) * 0.5;
-			Objects.push_back(ShapeInfo(4 + Fnord, vec3(1.0, 1.0, 1.0), TRAN(WorldX, WorldY, -2.0 - WorldZ)));
-		}
-	}
 
 	return StatusCode::PASS;
 }
@@ -173,12 +202,12 @@ void SDFExperiment::Render()
 
 #if 1
 	{
-		double Hover = (sin(Time * 2.0) + 1.0) / 10.0;
+		double Hover = (sin(Time * 2.0) + 1.0) / 2.5;
 		Tangerine->LocalToWorld = TRAN(3.0, 0.0, Hover) * ROTZ(Time * 2.0);
 		Tangerine->WorldToLocal = mat4(inverse(Tangerine->LocalToWorld));
 	}
 	{
-		double Hover = (sin(Time * 2.5) + 1.0) / 10.0;
+		double Hover = (sin(Time * 2.5) + 1.0) / 2.5;
 		Lime->LocalToWorld = TRAN(0.0, 3.0, Hover) * ROTZ(Time * 1.8);
 		Lime->WorldToLocal = mat4(inverse(Lime->LocalToWorld));
 	}
@@ -189,9 +218,9 @@ void SDFExperiment::Render()
 	}
 #endif
 
-	const vec3 OriginStart = vec3(15.0, 0.0, 0.0);
-	const vec3 OriginMiddle = vec3(5.0, 5.0, 0.0);
-	const vec3 OriginEnd = vec3(7.0, 7.0, 3.5);
+	const vec3 OriginStart = vec3(15.0, 0.0, 2.0);
+	const vec3 OriginMiddle = vec3(5.0, 5.0, 2.0);
+	const vec3 OriginEnd = vec3(10.0, 10.0, 5.0);
 	const float Alpha = min(Time / 5.0, 1.0);
 
 	const vec3 CameraOrigin = mix(mix(OriginStart, OriginMiddle, Alpha), mix(OriginMiddle, OriginEnd, Alpha), Alpha);

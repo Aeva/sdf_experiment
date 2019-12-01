@@ -20,7 +20,10 @@ const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
 #define PAINT_LIME 7
 #define PAINT_FLOOR1 8
 #define PAINT_FLOOR2 9
-
+#define PAINT_WATER1 10
+#define PAINT_WATER2 11
+#define PAINT_TREE_TRUNK 12
+#define PAINT_TREE_LEAVES 13
 
 #define ENABLE_CUBETRACE 1
 
@@ -83,6 +86,19 @@ ColorSDF Onion(vec3 Point)
 }
 
 
+ColorSDF TreeSDF(vec3 Local)
+{
+	const float TreeHeight = 10.0;
+	const float FoliageOffset = 2.0;
+	const float FoliageHeight = max(TreeHeight - FoliageOffset, 0.0);
+	const vec3 FoliageLocal = Local - vec3(0.0, 0.0, FoliageOffset);
+
+	ColorSDF Shape = Cylinder(Local, 0.5, TreeHeight, PAINT_TREE_TRUNK);
+	Shape = Union(Shape, Cylinder(FoliageLocal, 2.0, FoliageHeight, PAINT_TREE_LEAVES));
+	return Shape;
+}
+
+
 ColorSDF SceneSDF(vec3 Local)
 {
 	if (ShapeFn == 0)
@@ -105,9 +121,13 @@ ColorSDF SceneSDF(vec3 Local)
 	{
 		return Onion(Local);
 	}
-	else
+	else if (ShapeFn >= 4 && ShapeFn <=7)
 	{
 		return CubeTraceSceneSDF(Local);
+	}
+	else if (ShapeFn == 8)
+	{
+		return TreeSDF(Local);
 	}
 }
 
@@ -121,6 +141,14 @@ ColorSDF CubeTraceSceneSDF(vec3 Local)
 	else if (ShapeFn == 5)
 	{
 		return Box(Local, ShapeBounds, PAINT_FLOOR2);
+	}
+	if (ShapeFn == 6)
+	{
+		return Box(Local, ShapeBounds, PAINT_WATER1);
+	}
+	else if (ShapeFn == 7)
+	{
+		return Box(Local, ShapeBounds, PAINT_WATER2);
 	}
 }
 
@@ -235,7 +263,23 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 	}
 	else if (Shape.PaintFn == PAINT_FLOOR2)
 	{
-		Color = vec3((Point.z + 2.0) / 2.0);
+		Color = vec3(0.0, (Point.z + 2.0) / 2.0, 0.0) + 0.2;
+	}
+	else if (Shape.PaintFn == PAINT_WATER1)
+	{
+		Color = vec3(0.0, 0.0, abs(Point.z) / 2.0);
+	}
+	else if (Shape.PaintFn == PAINT_WATER2)
+	{
+		Color = vec3(0.0, 0.0, abs(Point.z) / 2.0) + 0.2;
+	}
+	else if (Shape.PaintFn == PAINT_TREE_TRUNK)
+	{
+		Color = vec3(0.627, 0.471, 0.094);
+	}
+	else if (Shape.PaintFn == PAINT_TREE_LEAVES)
+	{
+		Color = vec3(0.376, 0.784, 0.031);
 	}
     else if (Shape.PaintFn == PAINT_DISCARD)
     {
