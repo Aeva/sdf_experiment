@@ -26,7 +26,7 @@ in flat int ShapeFn;
 
 
 const vec3 UpVector = vec3(0.0, 0.0, 1.0);
-const int MaxIterations = 500;
+const int MaxIterations = 100;
 const float AlmostZero = 0.001;
 
 
@@ -174,7 +174,7 @@ void CubeTrace(out vec3 Position, out ColorSDF Scene)
 		}
 	}
 
-	for (int i = 1; i < 6; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		const vec3 LocalPosition = RayDists[i] * LocalRayDir + LocalRayStart;
 		Scene = CubeTraceSceneSDF(LocalPosition);
@@ -190,6 +190,7 @@ void CubeTrace(out vec3 Position, out ColorSDF Scene)
 }
 
 
+#if 0
 void RayMarch(out vec3 Position, out ColorSDF Scene)
 {
 	const vec3 WorldRayDir = GetRayDir();
@@ -221,6 +222,90 @@ void RayMarch(out vec3 Position, out ColorSDF Scene)
 	Position = vec3(0.0);
 	Scene.PaintFn = -1;
 }
+#else
+float sdBox(vec3 p, vec3 b);
+void RayMarch(out vec3 Position, out ColorSDF Scene)
+{
+	const vec3 WorldRayDir = GetRayDir();
+	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
+	const vec3 LocalRayStart = Transform3(WorldToLocal, WorldRayStart);
+	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
+
+	const vec3 BoxExtent = vec3(1.0); // TODO: This shouldn't be hard coded.
+
+	if (abs(LocalRayStart.x) <= BoxExtent.x &&
+		abs(LocalRayStart.y) <= BoxExtent.y &&
+		abs(LocalRayStart.z) <= BoxExtent.z)
+	{
+		Position = WorldRayStart;
+		Scene = SceneSDF(LocalRayStart);
+		return;
+	}
+
+	const vec3 Fnord1 = (-BoxExtent - LocalRayStart) / LocalRayDir;
+	const vec3 Fnord2 = (BoxExtent - LocalRayStart) / LocalRayDir;
+	float RayDists[6] = \
+	{
+		Fnord1.x,
+		Fnord1.y,
+		Fnord1.z,
+		Fnord2.x,
+		Fnord2.y,
+		Fnord2.z
+	};
+
+	for (int t = 0; t < 5; ++t)
+	{
+		for (int i = 0; i < 5; ++i)
+		{
+			const float a = RayDists[i];
+			const float b = RayDists[i+1];
+			RayDists[i] = min(a, b);
+			RayDists[i+1] = max(a, b);
+		}
+	}
+
+	bool bFound = false;
+	float RayDistance;
+	for (int i = 0; i < 3; ++i)
+	{
+		vec3 LocalPosition = RayDists[i] * LocalRayDir + LocalRayStart;
+		if (IS_SOLID(sdBox(LocalPosition, BoxExtent)))
+		{
+			RayDistance = RayDists[i];
+			bFound = true;
+			break;
+		}
+	}
+	if (bFound)
+	{
+		const float EndRayDist = RayDists[5];
+		for (int Step = 0; Step <= MaxIterations; ++Step)
+	    {
+			vec3 LocalPosition = RayDistance * LocalRayDir + LocalRayStart;
+			Scene = SceneSDF(LocalPosition);
+			RayDistance += Scene.Distance;
+			if (IS_SOLID(Scene.Distance))
+			{
+				Scene = SceneSDF(LocalPosition);
+				if (Scene.InnerDistance == Scene.Distance)
+				{
+					Scene.InnerDistance = 0.0;
+				}
+				Scene.Distance = 0.0;
+				Position = Transform3(LocalToWorld, LocalPosition);
+				return;
+			}
+			else if (RayDistance > EndRayDist)
+			{
+				break;
+			}
+		}
+	}
+	Position = vec3(0.0);
+	Scene = DiscardSDF;
+}
+#endif
 
 
 // ------------------------------------------------------------------
