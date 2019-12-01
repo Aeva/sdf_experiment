@@ -20,11 +20,13 @@ struct ShapeInfo
 {
 	mat4 LocalToWorld;
 	mat4 WorldToLocal;
+	vec3 AABB;
 	int ShapeFn;
 
-	ShapeInfo(int InShapeFn, dmat4 InLocalToWorld)
+	ShapeInfo(int InShapeFn, vec3 InAABB, dmat4 InLocalToWorld)
 		: LocalToWorld(mat4(InLocalToWorld))
 		, WorldToLocal(mat4(inverse(InLocalToWorld)))
+		, AABB(InAABB)
 		, ShapeFn(InShapeFn)
 	{}
 };
@@ -34,27 +36,24 @@ struct ShapeUploadInfo
 {
 	vec4 ClipBounds; // (MinX, MinY, MaxX, MaxY)
 	vec4 DepthRange; // (Min, Max, 0.0, 0.0)
+	vec4 ShapeParams; // (AABB Extent, ShapeFn)
 	mat4 LocalToWorld;
 	mat4 WorldToLocal;
-	int ShapeFn;
-	int Padding[3];
 
 	ShapeUploadInfo()
 		: ClipBounds(vec4(0.0))
 		, DepthRange(vec4(0.0))
+		, ShapeParams(vec4(0.0))
 		, LocalToWorld(mat4(0.0))
 		, WorldToLocal(mat4(0.0))
-		, ShapeFn(0)
-		, Padding{ 0 }
 	{}
 
 	ShapeUploadInfo(ShapeInfo InShape, vec4 InClipBounds, vec2 InDepthRange)
 		: ClipBounds(InClipBounds)
 		, DepthRange(vec4(InDepthRange, 0.0, 0.0))
+		, ShapeParams(vec4(InShape.AABB, float(InShape.ShapeFn)))
 		, LocalToWorld(InShape.LocalToWorld)
 		, WorldToLocal(InShape.WorldToLocal)
-		, ShapeFn(InShape.ShapeFn)
-		, Padding{ 0 }
 	{}
 };
 
@@ -132,10 +131,10 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 #endif
 
 	Objects.reserve(ObjectsCount);
-	Objects.push_back(ShapeInfo(0, TRAN(0.0, 0.0, 0.0)));
-	Objects.push_back(ShapeInfo(1, TRAN(3.0, 0.0, 0.0)));
-	Objects.push_back(ShapeInfo(2, TRAN(0.0, 3.0, 0.0)));
-	Objects.push_back(ShapeInfo(3, TRAN(0.0, 0.0, 3.0)));
+	Objects.push_back(ShapeInfo(0, vec3(1.0), TRAN(0.0, 0.0, 0.0)));
+	Objects.push_back(ShapeInfo(1, vec3(1.0), TRAN(3.0, 0.0, 0.0)));
+	Objects.push_back(ShapeInfo(2, vec3(1.0), TRAN(0.0, 3.0, 0.0)));
+	Objects.push_back(ShapeInfo(3, vec3(1.0), TRAN(0.0, 0.0, 3.0)));
 	Tangerine = &Objects[1];
 	Lime = &Objects[2];
 	Onion = &Objects[3];
@@ -149,7 +148,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 			double WorldX = OffsetX + double(x) * 2.0;
 			double WorldY = OffsetY + double(y) * 2.0;
 			double WorldZ = (double(rand() % 1000) / 1000.0) * 0.5;
-			Objects.push_back(ShapeInfo(4 + Fnord, TRAN(WorldX, WorldY, -2.0 - WorldZ)));
+			Objects.push_back(ShapeInfo(4 + Fnord, vec3(1.0, 1.0, 1.0), TRAN(WorldX, WorldY, -2.0 - WorldZ)));
 		}
 	}
 
@@ -230,17 +229,17 @@ void SDFExperiment::Render()
 	VisibleObjects.reserve(ObjectsCount);
 	for (int i = 0; i < ObjectsCount; ++i)
 	{
-		const float Fnord = 1.0;
+		const vec3 Bounds = Objects[i].AABB;
 		const vec4 LocalCorners[8] = \
 		{
-			vec4(-Fnord, -Fnord, -Fnord, 1.0),
-				vec4(-Fnord, Fnord, -Fnord, 1.0),
-				vec4(Fnord, -Fnord, -Fnord, 1.0),
-				vec4(Fnord, Fnord, -Fnord, 1.0),
-				vec4(-Fnord, -Fnord, Fnord, 1.0),
-				vec4(-Fnord, Fnord, Fnord, 1.0),
-				vec4(Fnord, -Fnord, Fnord, 1.0),
-				vec4(Fnord, Fnord, Fnord, 1.0)
+			vec4(-Bounds.x, -Bounds.y, -Bounds.z, 1.0),
+			vec4(-Bounds.x,  Bounds.y, -Bounds.z, 1.0),
+			vec4( Bounds.x, -Bounds.y, -Bounds.z, 1.0),
+			vec4( Bounds.x,  Bounds.y, -Bounds.z, 1.0),
+			vec4(-Bounds.x, -Bounds.y,  Bounds.z, 1.0),
+			vec4(-Bounds.x,  Bounds.y,  Bounds.z, 1.0),
+			vec4( Bounds.x, -Bounds.y,  Bounds.z, 1.0),
+			vec4( Bounds.x,  Bounds.y,  Bounds.z, 1.0)
 		};
 		float MinDist;
 		float MaxDist;

@@ -44,9 +44,9 @@ ColorSDF Axes(vec3 Point, float Radius, float Length)
 }
 
 
-ColorSDF FancyBox(vec3 Point)
+ColorSDF FancyBox(vec3 Point, vec3 Bounds)
 {
-	ColorSDF Cube = Box(Point, vec3(1.0), PAINT_WHITE);
+	ColorSDF Cube = Box(Point, Bounds, PAINT_WHITE);
 	ColorSDF Inlay = Axes(Point, 0.8, 2.0);
 	ColorSDF Shape = Replace(Cube, Inlay);
 	Shape = Cut(Shape, Sphere((Point - vec3(1.0, 1.0, 1.0)), 1.3, 0));
@@ -87,7 +87,7 @@ ColorSDF SceneSDF(vec3 Local)
 {
 	if (ShapeFn == 0)
 	{
-		return FancyBox(Local);
+		return FancyBox(Local, ShapeBounds);
 	}
 	else if (ShapeFn == 1)
 	{
@@ -116,11 +116,11 @@ ColorSDF CubeTraceSceneSDF(vec3 Local)
 {
 	if (ShapeFn == 4)
 	{
-		return Box(Local, vec3(1.0), PAINT_FLOOR1);
+		return Box(Local, ShapeBounds, PAINT_FLOOR1);
 	}
 	else if (ShapeFn == 5)
 	{
-		return Box(Local, vec3(1.0), PAINT_FLOOR2);
+		return Box(Local, ShapeBounds, PAINT_FLOOR2);
 	}
 }
 

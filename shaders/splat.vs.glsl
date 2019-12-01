@@ -12,6 +12,7 @@ out gl_PerVertex
 out flat mat4 LocalToWorld;
 out flat mat4 WorldToLocal;
 out flat vec2 DepthRange;
+out flat vec3 ShapeBounds;
 out flat int ShapeFn;
 
 
@@ -19,9 +20,9 @@ struct ObjectInfo
 {
 	vec4 ClipBounds; // (MinX, MinY, MaxX, MaxY)
 	vec4 DepthRange; // (Min, Max, 0.0, 0.0)
+	vec4 ShapeParams; // (AABB Extent, ShapeFn)
 	mat4 LocalToWorld;
 	mat4 WorldToLocal;
-	int ShapeFn;
 };
 
 
@@ -45,7 +46,8 @@ void main()
 	LocalToWorld = Objects[gl_InstanceID].LocalToWorld;
 	WorldToLocal = Objects[gl_InstanceID].WorldToLocal;
 	DepthRange = Objects[gl_InstanceID].DepthRange.xy;
-	ShapeFn = Objects[gl_InstanceID].ShapeFn;
+	ShapeBounds = Objects[gl_InstanceID].ShapeParams.xyz;
+	ShapeFn = int(Objects[gl_InstanceID].ShapeParams.w);
 	vec4 ClipBounds = Objects[gl_InstanceID].ClipBounds;
 
 	// (-1.0, -1.0) is the upper-left corner of the screen.

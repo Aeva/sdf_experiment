@@ -22,6 +22,7 @@ in vec4 gl_FragCoord;
 in flat mat4 LocalToWorld;
 in flat mat4 WorldToLocal;
 in flat vec2 DepthRange;
+in flat vec3 ShapeBounds;
 in flat int ShapeFn;
 
 
@@ -140,7 +141,7 @@ void CubeTrace(out vec3 Position, out ColorSDF Scene)
 	const vec3 LocalRayStart = Transform3(WorldToLocal, WorldRayStart);
 	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
 
-	const vec3 BoxExtent = vec3(1.0); // TODO: This shouldn't be hard coded.
+	const vec3 BoxExtent = ShapeBounds;
 
 	if (abs(LocalRayStart.x) <= BoxExtent.x &&
 		abs(LocalRayStart.y) <= BoxExtent.y &&
@@ -231,7 +232,7 @@ void RayMarch(out vec3 Position, out ColorSDF Scene)
 	const vec3 LocalRayStart = Transform3(WorldToLocal, WorldRayStart);
 	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
 
-	const vec3 BoxExtent = vec3(1.0); // TODO: This shouldn't be hard coded.
+	const vec3 BoxExtent = ShapeBounds;
 
 	if (abs(LocalRayStart.x) <= BoxExtent.x &&
 		abs(LocalRayStart.y) <= BoxExtent.y &&
