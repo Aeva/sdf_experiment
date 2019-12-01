@@ -297,15 +297,33 @@ void SDFExperiment::Render()
 
 #if PROFILING
 	glQueryCounter(FrameEndTime, GL_TIMESTAMP);
-	std::cout << "Objects Drawn: " << VisibleObjectsCount << "\n";
 	{
 		GLint ElapsedFrameTimeNS = GetQueryValue(FrameEndTime, GL_QUERY_RESULT) - GetQueryValue(FrameStartTime, GL_QUERY_RESULT);
 		GLint TotalDrawTimeNS = GetQueryValue(DrawTime, GL_QUERY_RESULT);
-		std::cout << "GPU Times:\n"
-			<< " -   Total Draw: " << double(TotalDrawTimeNS) * 1e-6 << " ms\n"
-			<< " - Average Draw: " << double(TotalDrawTimeNS) / double(VisibleObjectsCount) * 1e-6 << " ms\n"
-			<< " -  Total Frame: " << double(ElapsedFrameTimeNS) * 1e-6 << " ms\n";
-			//<< " - Approx. Idle: " << double(ElapsedFrameTimeNS - TotalDrawTimeNS) * 1e-6 << " ms\n";
+
+		static int FrameCounter = 0;
+		FrameCounter += 1;
+
+		const int StatSamples = 500;
+		static double TotalDrawTimesNS[StatSamples] = { 0.0 };
+		const int Sample = FrameCounter % StatSamples;
+		TotalDrawTimesNS[Sample] = double(TotalDrawTimeNS);
+
+		if (Sample == StatSamples - 1)
+		{
+			double TotalDrawTime = 0.0;
+			for (int i = 0; i < StatSamples; ++i)
+			{
+				TotalDrawTime += TotalDrawTimesNS[i];
+			}
+			TotalDrawTime /= double(StatSamples);
+			TotalDrawTime *= 1e-6;
+			std::cout \
+				<< "Objects Drawn: " << VisibleObjectsCount << "\n"
+				<< "Average GPU Times:\n"
+				<< " - All Draws: " << TotalDrawTime << " ms\n"
+				<< " - Per Shape: " << TotalDrawTime / double(VisibleObjectsCount) << " ms\n";
+		}
 	}
 #endif
 }

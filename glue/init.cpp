@@ -176,12 +176,12 @@ void DrawFrame()
 		SDFExperiment::WindowIsDirty();
 	}
 
-#if PROFILING
+#if PROFILING && 0
 	{
 		const double Start = glfwGetTime();
 #endif
 		SDFExperiment::Render();
-#if PROFILING
+#if PROFILING && 0
 		const double Delta = glfwGetTime() - Start;
 		std::cout << "\nCPU Times:\n";
 		std::cout << " - FrameTime: " << Delta * 1000.0 << " ms\n";
@@ -190,7 +190,7 @@ void DrawFrame()
 		const double Start = glfwGetTime();
 #endif
 		glfwSwapBuffers(Window);
-#if PROFILING
+#if PROFILING && 0
 		const double Delta = glfwGetTime() - Start;
 		std::cout << " - Present: " << Delta * 1000.0 << " ms\n\n\n\n\n";
 	}
