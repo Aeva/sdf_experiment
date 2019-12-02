@@ -2,10 +2,9 @@
 #define GLM_FORCE_SWIZZLE
 #include "glm/glm.hpp"
 #include "glm/ext.hpp"
+#include "lodepng.h"
 #include <cstdlib>
-#if PROFILING
 #include <iostream>
-#endif
 
 using namespace glm;
 
@@ -58,11 +57,23 @@ struct ShapeUploadInfo
 };
 
 
+struct TerrainInfo
+{
+	double Height;
+
+	TerrainInfo(double InHeight)
+		: Height(InHeight)
+	{}
+};
+
+
 const int FloorWidth = 100;
 const int FloorHeight = 100;
+const int FloorArea = FloorWidth * FloorHeight;
 const int SceneObjects = 4;
 const int Trees = 100;
-const int ObjectsCount = FloorWidth * FloorHeight + SceneObjects + Trees;
+const int ObjectsCount = FloorArea + SceneObjects + Trees;
+std::vector<TerrainInfo> MapData;
 std::vector<ShapeInfo> Objects;
 ShapeInfo* Tangerine = nullptr;
 ShapeInfo* Lime = nullptr;
@@ -107,6 +118,59 @@ void UpdateScreenInfo()
 }
 
 
+StatusCode ReadMapFile(const char* FileName, std::vector<unsigned char>* ImageData)
+{
+	unsigned ImageWidth;
+	unsigned ImageHeight;
+	unsigned Error = lodepng::decode(*ImageData, ImageWidth, ImageHeight, FileName);
+	if (Error)
+	{
+		std::cout \
+			<< "Failed to read " << FileName <<"!\n"
+			<< " - Reason: PNG decode error:\n"
+			<< " - [" << Error << "] " << lodepng_error_text(Error) << "\n";
+		return StatusCode::FAIL;
+	}
+	if (ImageWidth != FloorWidth || ImageHeight != FloorHeight)
+	{
+		std::cout \
+			<< "Failed to read " << FileName << "!\n"
+			<< " - Reason: Image not expected sive.\n";
+		return StatusCode::FAIL;
+	}
+	return StatusCode::PASS;
+}
+
+
+int MapIndex(int x, int y)
+{
+	x = max(min(x, FloorWidth - 1), 0);
+	y = max(min(y, FloorHeight - 1), 0);
+	return FloorWidth * y + x;
+}
+
+
+StatusCode ReadMapData()
+{
+	std::vector<unsigned char> HeightData;
+	std::vector<unsigned char> TerrainData;
+	const char* HeightFile = "heightmap.png";
+	const char* TerrainFile = "terrain.png";
+	RETURN_ON_FAIL(ReadMapFile(HeightFile, &HeightData));
+	RETURN_ON_FAIL(ReadMapFile(TerrainFile, &TerrainData));
+
+	MapData.reserve(FloorArea);
+	for (int i = 0; i < FloorArea; ++i)
+	{
+		const double Alpha = double(HeightData[i * 4]) / 255.0;
+		const double Height = mix(-3.5, 5.0, Alpha);
+		MapData.emplace_back(Height);
+	}
+
+	return StatusCode::PASS;
+}
+
+
 StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 {
 	RETURN_ON_FAIL(SplatShader.Setup(
@@ -137,6 +201,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 	Objects.push_back(ShapeInfo(2, vec3(1.0), TRAN(0.0, 3.0, 0.0)));
 	Objects.push_back(ShapeInfo(3, vec3(1.0), TRAN(0.0, 0.0, 3.0)));
 
+#if 1
 	const double OffsetX = -double(FloorWidth) * 2.0 + 20.5;
 	const double OffsetY = -double(FloorHeight) * 2.0 + 20.5;
 	const vec2 RiverCenter = vec2(7.5, 7.5);
@@ -177,6 +242,30 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 		const double OffsetZ = ExtentZ - 2.0;
 		Objects.push_back(ShapeInfo(8, vec3(2.0, 2.0, 4.0), TRAN(WorldPos.x, WorldPos.y, OffsetZ)));
 	}
+#else
+	RETURN_ON_FAIL(ReadMapData());
+	bool bToggle = false;
+	const double WorldOffsetX = -double(FloorWidth) * 0.5;
+	const double WorldOffsetY = -double(FloorHeight) * 0.5;
+	for (int y = 0; y < FloorHeight; ++y)
+	{
+		for (int x = 0; x < FloorWidth; ++x)
+		{
+			const TerrainInfo Terrain = MapData[MapIndex(x, y)];
+			const bool bIsRiver = false;
+
+			const double WorldX = double(x) + WorldOffsetX;
+			const double WorldY = double(y) + WorldOffsetY;
+			const double WorldZ = Terrain.Height;
+
+			const int PaintFn = bIsRiver ? 6 + int(bToggle) : 4 + int(bToggle);
+			
+			Objects.push_back(ShapeInfo(PaintFn, vec3(1.0, 1.0, 1.0), TRAN(WorldX, WorldY, WorldZ)));
+			bToggle = !bToggle;
+		}
+		bToggle = !bToggle;
+	}
+#endif
 
 	Tangerine = &Objects[1];
 	Lime = &Objects[2];

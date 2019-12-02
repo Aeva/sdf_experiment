@@ -259,11 +259,13 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 	}
 	else if (Shape.PaintFn == PAINT_FLOOR1)
 	{
-		Color = vec3(0.0, (Point.z + 2.0) / 2.0, 0.0);
+		//Color = vec3(0.0, (Point.z + 2.0) / 2.0, 0.0);
+		Color = vec3(0.0, 0.75, 0.0);
 	}
 	else if (Shape.PaintFn == PAINT_FLOOR2)
 	{
-		Color = vec3(0.0, (Point.z + 2.0) / 2.0, 0.0) + 0.2;
+		//Color = vec3(0.0, (Point.z + 2.0) / 2.0, 0.0) + 0.2;
+		Color = vec3(0.0, 0.5, 0.0);
 	}
 	else if (Shape.PaintFn == PAINT_WATER1)
 	{
