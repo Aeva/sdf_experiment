@@ -160,6 +160,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 			Objects.push_back(ShapeInfo(PaintFn, vec3(TileSize, TileSize, 1.0), TRAN(WorldX, WorldY, -2.0 - WorldZ)));
 			bIsOdd = !bIsOdd;
 		}
+		bIsOdd = !bIsOdd;
 	}
 
 	for (int t = 0; t < Trees; ++t)
