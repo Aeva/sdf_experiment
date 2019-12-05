@@ -300,7 +300,7 @@ void main()
     vec3 Position;
     ColorSDF Scene;
 #if ENABLE_CUBETRACE
-	if (ShapeFn == 4 || ShapeFn == 5)
+	if (ShapeFn == 4 || ShapeFn == 5 || ShapeFn == 6 || ShapeFn == 7)
 	{
 		CubeTrace(Position, Scene);
 	}
