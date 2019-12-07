@@ -4,3 +4,4 @@
 windows/x64
 windows/.vs
 sdf_experiment
+__pycache__/
