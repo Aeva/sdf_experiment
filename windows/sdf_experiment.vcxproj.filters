@@ -54,5 +54,8 @@
     <None Include="..\shaders\sdf.glsl">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\shaders\defs.glsl">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

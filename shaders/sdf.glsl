@@ -1,3 +1,4 @@
+prepend: shaders/defs.glsl
 prepend: shaders/screen.glsl
 --------------------------------------------------------------------------------
 
@@ -41,7 +42,7 @@ struct ColorSDF
 };
 
 
-const ColorSDF DiscardSDF = ColorSDF(0.0, 0.0, -1, vec3(0.0), vec3(0.0));
+const ColorSDF DiscardSDF = ColorSDF(0.0, 0.0, PAINT_DISCARD, vec3(0.0), vec3(0.0));
 
 
 ColorSDF SceneSDF(vec3 LocalPosition);
@@ -221,7 +222,7 @@ void RayMarch(out vec3 Position, out ColorSDF Scene)
 		}
     }
 	Position = vec3(0.0);
-	Scene.PaintFn = -1;
+	Scene.PaintFn = PAINT_DISCARD;
 }
 #elif 0
 float sdBox(vec3 p, vec3 b);

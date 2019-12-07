@@ -79,7 +79,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>DEBUG_BUILD;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PROFILING;DEBUG_BUILD;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -96,7 +96,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PROFILING;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -115,7 +115,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\lodepng\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG_BUILD</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PROFILING;DEBUG_BUILD</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -125,8 +125,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\lodepng\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>
-      </PreprocessorDefinitions>
+      <PreprocessorDefinitions>PROFILING;</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -147,6 +146,7 @@
     <ClInclude Include="..\sdf_experiment.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\shaders\defs.glsl" />
     <None Include="..\shaders\screen.glsl" />
     <None Include="..\shaders\sdf.glsl" />
     <None Include="..\shaders\splat.fs.glsl" />

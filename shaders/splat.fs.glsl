@@ -1,3 +1,4 @@
+prepend: shaders/defs.glsl
 prepend: shaders/screen.glsl
 prepend: shaders/sdf.glsl
 --------------------------------------------------------------------------------
@@ -7,25 +8,6 @@ layout(depth_any) out float gl_FragDepth;
 
 
 const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
-
-
-#define PAINT_DISCARD -1
-#define PAINT_X_AXIS 0
-#define PAINT_Y_AXIS 1
-#define PAINT_Z_AXIS 2
-#define PAINT_WHITE 3
-#define PAINT_ONION1 4
-#define PAINT_ONION2 5
-#define PAINT_TANGERINE 6
-#define PAINT_LIME 7
-#define PAINT_FLOOR1 8
-#define PAINT_FLOOR2 9
-#define PAINT_WATER1 10
-#define PAINT_WATER2 11
-#define PAINT_TREE_TRUNK 12
-#define PAINT_TREE_LEAVES 13
-
-#define ENABLE_CUBETRACE 1
 
 
 ColorSDF Sphube(vec3 Point, float Alpha, int PaintFn)
@@ -101,31 +83,31 @@ ColorSDF TreeSDF(vec3 Local)
 
 ColorSDF SceneSDF(vec3 Local)
 {
-	if (ShapeFn == 0)
+	if (ShapeFn == SHAPE_ORIGIN)
 	{
 		return FancyBox(Local, ShapeBounds);
 	}
-	else if (ShapeFn == 1)
+	else if (ShapeFn == SHAPE_X_AXIS)
 	{
 		ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
 		return Cut(Sphube(Local, 0.5, PAINT_TANGERINE), CutShape);
 	}
-	else if (ShapeFn == 2)
+	else if (ShapeFn == SHAPE_Y_AXIS)
 	{
 		ColorSDF A = Sphere(Local - vec3(-0.25, 0.25, 0.0), 0.75, PAINT_LIME);
 		ColorSDF B = Sphere(Local - vec3(0.25, -0.25, 0.0), 0.75, PAINT_LIME);
 		ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
 		return Cut(SmoothUnion(A, B, 0.1), CutShape);
 	}
-	else if (ShapeFn == 3)
+	else if (ShapeFn == SHAPE_Z_AXIS)
 	{
 		return Onion(Local);
 	}
-	else if (ShapeFn >= 4 && ShapeFn <=7)
+	else if (ShapeFn >= SHAPE_GRASS_CUBE_1 && ShapeFn <=SHAPE_WATER_CUBE_2)
 	{
 		return CubeTraceSceneSDF(Local);
 	}
-	else if (ShapeFn == 8)
+	else if (ShapeFn == SHAPE_TREE)
 	{
 		return TreeSDF(Local);
 	}
@@ -134,19 +116,19 @@ ColorSDF SceneSDF(vec3 Local)
 
 ColorSDF CubeTraceSceneSDF(vec3 Local)
 {
-	if (ShapeFn == 4)
+	if (ShapeFn == SHAPE_GRASS_CUBE_1)
 	{
 		return Box(Local, ShapeBounds, PAINT_FLOOR1);
 	}
-	else if (ShapeFn == 5)
+	else if (ShapeFn == SHAPE_GRASS_CUBE_2)
 	{
 		return Box(Local, ShapeBounds, PAINT_FLOOR2);
 	}
-	if (ShapeFn == 6)
+	if (ShapeFn == SHAPE_WATER_CUBE_1)
 	{
 		return Box(Local, ShapeBounds, PAINT_WATER1);
 	}
-	else if (ShapeFn == 7)
+	else if (ShapeFn == SHAPE_WATER_CUBE_2)
 	{
 		return Box(Local, ShapeBounds, PAINT_WATER2);
 	}

@@ -5,6 +5,7 @@
 #include "lodepng.h"
 #include <cstdlib>
 #include <iostream>
+#include "shaders/defs.glsl"
 
 using namespace glm;
 
@@ -196,10 +197,10 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 #endif
 
 	Objects.reserve(ObjectsCount);
-	Objects.push_back(ShapeInfo(0, vec3(1.0), TRAN(0.0, 0.0, 0.0)));
-	Objects.push_back(ShapeInfo(1, vec3(1.0), TRAN(3.0, 0.0, 0.0)));
-	Objects.push_back(ShapeInfo(2, vec3(1.0), TRAN(0.0, 3.0, 0.0)));
-	Objects.push_back(ShapeInfo(3, vec3(1.0), TRAN(0.0, 0.0, 3.0)));
+	Objects.push_back(ShapeInfo(SHAPE_ORIGIN, vec3(1.0), TRAN(0.0, 0.0, 0.0)));
+	Objects.push_back(ShapeInfo(SHAPE_X_AXIS, vec3(1.0), TRAN(3.0, 0.0, 0.0)));
+	Objects.push_back(ShapeInfo(SHAPE_Y_AXIS, vec3(1.0), TRAN(0.0, 3.0, 0.0)));
+	Objects.push_back(ShapeInfo(SHAPE_Z_AXIS, vec3(1.0), TRAN(0.0, 0.0, 3.0)));
 
 #if 1
 	const double OffsetX = -double(FloorWidth) * 2.0 + 20.5;
@@ -217,7 +218,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 			const double Distance = distance(RiverCenter, vec2(WorldX, WorldY));
 			const bool bIsRiver = Distance > 12.0 && Distance < 25.0;
 
-			const int PaintFn = bIsRiver ? 6 + int(bIsOdd) : 4 + int(bIsOdd);
+			const int PaintFn = bIsRiver ? SHAPE_WATER_CUBE_1 + int(bIsOdd) : SHAPE_GRASS_CUBE_1 + int(bIsOdd);
 			const double Turbulance = bIsRiver ? 0.25 : 0.5;
 			const double Offset = bIsRiver ? 0.5 : 0.0;
 
@@ -240,7 +241,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 		const double TreeHeight = 10.0;
 		const double ExtentZ = TreeHeight * 0.5;
 		const double OffsetZ = ExtentZ - 2.0;
-		Objects.push_back(ShapeInfo(8, vec3(2.0, 2.0, 4.0), TRAN(WorldPos.x, WorldPos.y, OffsetZ)));
+		Objects.push_back(ShapeInfo(SHAPE_TREE, vec3(2.0, 2.0, 4.0), TRAN(WorldPos.x, WorldPos.y, OffsetZ)));
 	}
 #else
 	RETURN_ON_FAIL(ReadMapData());
