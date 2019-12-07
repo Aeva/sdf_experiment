@@ -147,10 +147,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\shaders\defs.glsl" />
+    <None Include="..\shaders\math.glsl" />
+    <None Include="..\shaders\raymarch.glsl" />
     <None Include="..\shaders\screen.glsl" />
-    <None Include="..\shaders\sdf.glsl" />
+    <None Include="..\shaders\shapes.glsl" />
     <None Include="..\shaders\splat.fs.glsl" />
     <None Include="..\shaders\splat.vs.glsl" />
+    <None Include="..\shaders\view.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -51,10 +51,19 @@
     <None Include="..\shaders\screen.glsl">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\shaders\sdf.glsl">
+    <None Include="..\shaders\defs.glsl">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\shaders\defs.glsl">
+    <None Include="..\shaders\shapes.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\raymarch.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\math.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\view.glsl">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

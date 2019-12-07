@@ -1,6 +1,5 @@
-prepend: shaders/defs.glsl
-prepend: shaders/screen.glsl
-prepend: shaders/sdf.glsl
+prepend: shaders/view.glsl
+prepend: shaders/raymarch.glsl
 --------------------------------------------------------------------------------
 
 layout(location = 0) out vec4 OutColor;
