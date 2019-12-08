@@ -1,4 +1,3 @@
-prepend: shaders/math.glsl
 --------------------------------------------------------------------------------
 
 
@@ -20,7 +19,7 @@ ColorSDF CubeTraceSceneSDF(vec3 LocalPosition);
 
 
 #if USE_NORMALMETHOD == NORMALMETHOD_GRADIENT
-vec3 WorldNormalViaGradient(vec3 Point)
+vec3 WorldNormal(vec3 Point)
 {
 	const vec3 Local  = Transform3(WorldToLocal, Point);
 	const vec3 LocalM = Transform3(WorldToLocal, Point - AlmostZero);
@@ -35,7 +34,7 @@ vec3 WorldNormalViaGradient(vec3 Point)
 
 
 #elif USE_NORMALMETHOD == NORMALMETHOD_DERIVATIVE
-vec3 WorldNormalViaDerivatives(vec3 Point)
+vec3 WorldNormal(vec3 Point)
 {
 	return normalize(cross(dFdx(Point), dFdy(Point)));
 }
@@ -236,6 +235,7 @@ ColorSDF Cylinder(vec3 Point, float Radius, float Length, int PaintFn)
     return ColorSDF(Distance, Distance, PaintFn, Point, Extent);
 }
 
+
 ColorSDF Cylinder2(vec3 Point, float Radius, float Length, int PaintFn)
 {
     vec3 Extent = vec3(Radius, Radius, Length * 0.5);
@@ -243,4 +243,86 @@ ColorSDF Cylinder2(vec3 Point, float Radius, float Length, int PaintFn)
     float BoxPart = sdBox(Point, Extent);
     float Distance = opIntersection(CylinderPart, BoxPart);
     return ColorSDF(Distance, CylinderPart, PaintFn, Point, Extent);
+}
+
+
+ColorSDF Wedge(vec3 Point, float Angle)
+{
+	const float Alpha = min(abs(Angle) / 180.0, 1.0);
+	const float Rad = mix(RADIANS(90.0), 0.0, Alpha);
+	const float RotateA = RotateZ(Point, Rad).y;
+	const float RotateB = RotateZ(Point, -Rad).y;
+	const float Distance = max(RotateA, RotateB);
+	return Inset(ColorSDF(Distance, Distance, 0, Point, vec3(1.0, 1.0, 1.0)), 0.02);
+}
+
+
+ColorSDF Sphube(vec3 Point, float Alpha, int PaintFn)
+{
+    ColorSDF a = Sphere(Point, 1.0, PaintFn);
+    ColorSDF b = Box(Point, vec3(1.0), PaintFn);
+    b.Distance = mix(a.Distance, b.Distance, Alpha);
+	b.InnerDistance = mix(a.InnerDistance, b.InnerDistance, Alpha);
+    return b;
+}
+
+
+ColorSDF Axes(vec3 Point, float Radius, float Length)
+{
+	ColorSDF Shape = Cylinder2(Point, Radius, Length, PAINT_Z_AXIS);
+	Shape = Union(Shape, Cylinder2(RotateY(Point, RADIANS(90.0)), Radius, Length, PAINT_X_AXIS));
+	Shape = Union(Shape, Cylinder2(RotateX(Point, RADIANS(90.0)), Radius, Length, PAINT_Y_AXIS));
+	return Shape;
+}
+
+
+ColorSDF FancyBox(vec3 Point, vec3 Bounds)
+{
+	ColorSDF Cube = Box(Point, Bounds, PAINT_WHITE);
+	ColorSDF Inlay = Axes(Point, 0.8, 2.0);
+	ColorSDF Shape = Replace(Cube, Inlay);
+	Shape = Cut(Shape, Sphere((Point - vec3(1.0, 1.0, 1.0)), 1.3, 0));
+	return Shape;
+}
+
+
+ColorSDF Onion(vec3 Point)
+{
+	vec3 Cut1 = vec3(0.8, 1.2, 0.4);
+	vec3 Cut2 = vec3(1.4, 0.8, 0.5);
+	vec3 Cut3 = vec3(0.7, 1.4, 0.3);
+	ColorSDF Shape = Cut(Sphere(Point, 1.0, PAINT_ONION1), Sphere((Point - Cut1), 1.5, 0));
+	bool bEven = true;
+	for (float Shell = 0.8; Shell >= 0.2; Shell-= 0.2)
+	{
+		bEven = !bEven;
+		ColorSDF Next;
+		ColorSDF ShellCut;
+		if (bEven)
+		{
+			Next = Sphere(Point, Shell, PAINT_ONION1);
+			ShellCut = Sphere(Point - Cut2, 1.5, 0);
+		}
+		else
+		{
+			Next = Sphere(Point, Shell, PAINT_ONION2);
+			ShellCut = Sphere(Point - Cut3, 1.5, 0);
+		}
+		Shape = Cut(Shape, Next);
+		Shape = Union(Cut(Shape, Next), Cut(Next, ShellCut));
+	}
+	return Shape;
+}
+
+
+ColorSDF TreeSDF(vec3 Local)
+{
+	const float TreeHeight = 10.0;
+	const float FoliageOffset = 2.0;
+	const float FoliageHeight = max(TreeHeight - FoliageOffset, 0.0);
+	const vec3 FoliageLocal = Local - vec3(0.0, 0.0, FoliageOffset);
+
+	ColorSDF Shape = Cylinder(Local, 0.5, TreeHeight, PAINT_TREE_TRUNK);
+	Shape = Union(Shape, Cylinder(FoliageLocal, 2.0, FoliageHeight, PAINT_TREE_LEAVES));
+	return Shape;
 }

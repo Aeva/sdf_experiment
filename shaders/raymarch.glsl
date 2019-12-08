@@ -5,21 +5,8 @@ prepend: shaders/shapes.glsl
 --------------------------------------------------------------------------------
 
 
-vec3 GetRayDir()
-{
-	const vec2 NDC = gl_FragCoord.xy * ScreenSize.zw * 2.0 - 1.0;
-	vec4 View = ClipToView * vec4(NDC.xy, -1.0, 1.0);
-	View = vec4(normalize(vec3(View.x, View.y, View.z) / View.w), 1.0);
-	vec4 World = ViewToWorld * View;
-	return normalize(vec3(World.xyz / World.w) - CameraOrigin.xyz);
-}
-
-
-vec3 GetStartPosition(const vec3 RayDir)
-{
-	const float Fudge = 0.2;
-	return RayDir * max(DepthRange.x - Fudge, 0.0) + CameraOrigin.xyz;
-}
+vec3 GetRayDir();
+vec3 GetStartPosition(const vec3 RayDir);
 
 
 #if ENABLE_CUBETRACE

@@ -66,5 +66,11 @@
     <None Include="..\shaders\view.glsl">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\shaders\paint.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\scene.glsl">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

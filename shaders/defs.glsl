@@ -8,11 +8,12 @@
 #define SHAPE_X_AXIS 1
 #define SHAPE_Y_AXIS 2
 #define SHAPE_Z_AXIS 3
-#define SHAPE_GRASS_CUBE_1 4
-#define SHAPE_GRASS_CUBE_2 5
-#define SHAPE_WATER_CUBE_1 6
-#define SHAPE_WATER_CUBE_2 7
-#define SHAPE_TREE 8
+#define SHAPE_TREE 4
+#define CUBE_TRACEABLES 100
+#define SHAPE_GRASS_CUBE_1 101
+#define SHAPE_GRASS_CUBE_2 102
+#define SHAPE_WATER_CUBE_1 103
+#define SHAPE_WATER_CUBE_2 104
 
 // --------------------
 // PAINT FUNCTION NAMES

@@ -148,7 +148,9 @@
   <ItemGroup>
     <None Include="..\shaders\defs.glsl" />
     <None Include="..\shaders\math.glsl" />
+    <None Include="..\shaders\paint.glsl" />
     <None Include="..\shaders\raymarch.glsl" />
+    <None Include="..\shaders\scene.glsl" />
     <None Include="..\shaders\screen.glsl" />
     <None Include="..\shaders\shapes.glsl" />
     <None Include="..\shaders\splat.fs.glsl" />
