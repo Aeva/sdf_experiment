@@ -202,7 +202,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 	Objects.push_back(ShapeInfo(SHAPE_Y_AXIS, vec3(1.0), TRAN(0.0, 3.0, 0.0)));
 	Objects.push_back(ShapeInfo(SHAPE_Z_AXIS, vec3(1.0), TRAN(0.0, 0.0, 3.0)));
 
-#if 1
+#if USE_SCENE == SCENE_RANDOM_FOREST
 	const double OffsetX = -double(FloorWidth) * 2.0 + 20.5;
 	const double OffsetY = -double(FloorHeight) * 2.0 + 20.5;
 	const vec2 RiverCenter = vec2(7.5, 7.5);
@@ -243,7 +243,8 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 		const double OffsetZ = ExtentZ - 2.0;
 		Objects.push_back(ShapeInfo(SHAPE_TREE, vec3(2.0, 2.0, 4.0), TRAN(WorldPos.x, WorldPos.y, OffsetZ)));
 	}
-#else
+
+#elif USE_SCENE == SCENE_HEIGHTMAP
 	RETURN_ON_FAIL(ReadMapData());
 	bool bToggle = false;
 	const double WorldOffsetX = -double(FloorWidth) * 0.5;
@@ -266,7 +267,9 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 		}
 		bToggle = !bToggle;
 	}
-#endif
+
+
+#endif // USE_SCENE
 
 	Tangerine = &Objects[1];
 	Lime = &Objects[2];
@@ -291,7 +294,7 @@ void SDFExperiment::Render()
 	double Time = glfwGetTime();
 	UpdateScreenInfo();
 
-#if 1
+#if ENABLE_HOVERING_SHAPES
 	{
 		double Hover = (sin(Time * 2.0) + 1.0) / 2.5;
 		Tangerine->LocalToWorld = TRAN(3.0, 0.0, Hover) * ROTZ(Time * 2.0);
