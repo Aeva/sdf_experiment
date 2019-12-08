@@ -65,7 +65,7 @@ bool CubeTrace(out vec3 Position)
 
 
 #if USE_RAYMETHOD == RAYMETHOD_BASIC
-void RayMarch(out vec3 Position, out ColorSDF Scene)
+bool RayMarch(out vec3 Position)
 {
 	const vec3 WorldRayDir = GetRayDir();
 	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
@@ -75,32 +75,29 @@ void RayMarch(out vec3 Position, out ColorSDF Scene)
 
 	for (int Step = 0; Step <= MaxIterations; ++Step)
     {
-		Scene = SceneSDF(LocalPosition);
-		LocalPosition += LocalRayDir * Scene.Distance;
-		if (IS_SOLID(Scene.Distance))
+		float SDF = SceneHull(LocalPosition);
+		if (IS_SOLID(SDF))
         {
-			Scene = SceneSDF(LocalPosition);
-			if (Scene.InnerDistance == Scene.Distance)
-			{
-				Scene.InnerDistance = 0.0;
-			}
-			Scene.Distance = 0.0;
 			Position = Transform3(LocalToWorld, LocalPosition);
-			return;
+			return true;
         }
-		if (distance(LocalPosition, LocalCameraOrigin) > DepthRange.y)
+		else
 		{
-			break;
+			LocalPosition += LocalRayDir * SDF;
+			if (distance(LocalPosition, LocalCameraOrigin) > DepthRange.y)
+			{
+				break;
+			}
 		}
     }
+
 	Position = vec3(0.0);
-	Scene.PaintFn = PAINT_DISCARD;
+	return false;
 }
 
 
 #elif USE_RAYMETHOD == RAYMETHOD_CUBE_ELIMINATE
-float sdBox(vec3 p, vec3 b);
-void RayMarch(out vec3 Position, out ColorSDF Scene)
+bool RayMarch(out vec3 Position)
 {
 	const vec3 WorldRayDir = GetRayDir();
 	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
@@ -109,13 +106,11 @@ void RayMarch(out vec3 Position, out ColorSDF Scene)
 
 	const vec3 BoxExtent = ShapeBounds;
 
-	if (abs(LocalRayStart.x) <= BoxExtent.x &&
-		abs(LocalRayStart.y) <= BoxExtent.y &&
-		abs(LocalRayStart.z) <= BoxExtent.z)
+	float SDF = sdBox(LocalRayStart, ShapeBounds);
+	if (IS_SOLID(SDF))
 	{
 		Position = WorldRayStart;
-		Scene = SceneSDF(LocalRayStart);
-		return;
+		return true;
 	}
 
 	const vec3 Fnord1 = (-BoxExtent - LocalRayStart) / LocalRayDir;
@@ -158,28 +153,26 @@ void RayMarch(out vec3 Position, out ColorSDF Scene)
 		const float EndRayDist = RayDists[5];
 		for (int Step = 0; Step <= MaxIterations; ++Step)
 	    {
-			vec3 LocalPosition = RayDistance * LocalRayDir + LocalRayStart;
-			Scene = SceneSDF(LocalPosition);
-			RayDistance += Scene.Distance;
-			if (IS_SOLID(Scene.Distance))
-			{
-				Scene = SceneSDF(LocalPosition);
-				if (Scene.InnerDistance == Scene.Distance)
-				{
-					Scene.InnerDistance = 0.0;
-				}
-				Scene.Distance = 0.0;
+			const vec3 LocalPosition = RayDistance * LocalRayDir + LocalRayStart;
+			const float SDF = SceneHull(LocalPosition);
+			if (IS_SOLID(SDF))
+		    {
 				Position = Transform3(LocalToWorld, LocalPosition);
-				return;
+				return true;
 			}
-			else if (RayDistance > EndRayDist)
+			else
 			{
-				break;
+				RayDistance += SDF;
+				if (RayDistance > EndRayDist)
+				{
+					break;
+				}
 			}
 		}
 	}
+
 	Position = vec3(0.0);
-	Scene = DiscardSDF;
+	return false;
 }
 
 
@@ -193,7 +186,7 @@ struct Coverage
 };
 
 
-void RayMarch(out vec3 Position, out ColorSDF Scene)
+bool RayMarch(out vec3 Position)
 {
 	const vec3 WorldRayDir = GetRayDir();
 	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
@@ -201,7 +194,7 @@ void RayMarch(out vec3 Position, out ColorSDF Scene)
 	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
 
 #define POS_AT_T(T) (T * LocalRayDir + LocalRayStart)
-#define SDF_AT_T(T) SceneSDF(POS_AT_T(T)).Distance
+#define SDF_AT_T(T) SceneHull(POS_AT_T(T))
 #define SPAN(T, SD) T-abs(SD), T+abs(SD), (IS_SOLID(SD) ? -1 : 1)
 
 	// TODO: I don't think this is correct.
@@ -259,18 +252,13 @@ void RayMarch(out vec3 Position, out ColorSDF Scene)
 	{
 		const float HitT = max(StartT, Cursor.Low);
 		const vec3 LocalPosition = POS_AT_T(HitT);
-		Scene = SceneSDF(LocalPosition);
 		Position = Transform3(LocalToWorld, LocalPosition);
-		if (Scene.InnerDistance == Scene.Distance)
-		{
-			Scene.InnerDistance = 0.0;
-		}
-		Scene.Distance = 0.0;
+		return true;
 	}
 	else
 	{
-		Scene = DiscardSDF;
 		Position = vec3(0.0);
+		return false;
 	}
 #undef SPAN
 #undef SDF_AT_T

@@ -41,23 +41,23 @@ void main()
 	}
 	else
 #endif
+	if (RayMarch(Position))
 	{
-		ColorSDF Scene;
-		RayMarch(Position, Scene);
-		if (Scene.PaintFn == PAINT_DISCARD)
-		{
-			discard;
-		}
+		ColorSDF Scene = SceneColor(Transform3(WorldToLocal, Position));
 #if !ENABLE_CUBETRACE
-		else if (Scene.PaintFn == PAINT_CUBE)
+		if (Scene.PaintFn == PAINT_CUBE)
 		{
 			OutColor = vec4(PaintCube(Position), 1.0);
 		}
-#endif
 		else
+#endif
 		{
 			OutColor = vec4(Paint(Position, Scene), 1.0);
 		}
+	}
+	else
+	{
+		discard;
 	}
 	gl_FragDepth = 1.0 / distance(Position, CameraOrigin.xyz);
 }

@@ -1,26 +1,57 @@
 --------------------------------------------------------------------------------
 
-ColorSDF SceneSDF(vec3 Local)
+float SceneHull(vec3 Local)
 {
 	if (ShapeFn == SHAPE_ORIGIN)
 	{
-		return FancyBox(Local, ShapeBounds);
+		return FancyBoxHull(Local, ShapeBounds);
 	}
 	else if (ShapeFn == SHAPE_X_AXIS)
 	{
-		ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
-		return Cut(Sphube(Local, 0.5, PAINT_TANGERINE), CutShape);
+		return TangerineHull(Local);
 	}
 	else if (ShapeFn == SHAPE_Y_AXIS)
 	{
-		ColorSDF A = Sphere(Local - vec3(-0.25, 0.25, 0.0), 0.75, PAINT_LIME);
-		ColorSDF B = Sphere(Local - vec3(0.25, -0.25, 0.0), 0.75, PAINT_LIME);
-		ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
-		return Cut(SmoothUnion(A, B, 0.1), CutShape);
+		return LimeHull(Local);
 	}
 	else if (ShapeFn == SHAPE_Z_AXIS)
 	{
-		return Onion(Local);
+		return OnionHull(Local);
+	}
+	else if (ShapeFn == SHAPE_TREE)
+	{
+		return TreeHull(Local);
+	}
+#if !ENABLE_CUBETRACE
+	else if (ShapeFn > CUBE_TRACEABLES)
+	{
+		return sdBox(Local, ShapeBounds);
+	}
+#endif
+}
+
+
+ColorSDF SceneColor(vec3 Local)
+{
+	if (ShapeFn == SHAPE_ORIGIN)
+	{
+		return FancyBoxColor(Local, ShapeBounds);
+	}
+	else if (ShapeFn == SHAPE_X_AXIS)
+	{
+		return TangerineColor(Local);
+	}
+	else if (ShapeFn == SHAPE_Y_AXIS)
+	{
+		return LimeColor(Local);
+	}
+	else if (ShapeFn == SHAPE_Z_AXIS)
+	{
+		return OnionColor(Local);
+	}
+	else if (ShapeFn == SHAPE_TREE)
+	{
+		return TreeColor(Local);
 	}
 #if !ENABLE_CUBETRACE
 	else if (ShapeFn > CUBE_TRACEABLES)
@@ -28,8 +59,4 @@ ColorSDF SceneSDF(vec3 Local)
 		return Box(Local, ShapeBounds, PAINT_CUBE);
 	}
 #endif
-	else if (ShapeFn == SHAPE_TREE)
-	{
-		return TreeSDF(Local);
-	}
 }

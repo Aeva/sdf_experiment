@@ -14,8 +14,8 @@ struct ColorSDF
 const ColorSDF DiscardSDF = ColorSDF(0.0, 0.0, PAINT_DISCARD, vec3(0.0), vec3(0.0));
 
 
-ColorSDF SceneSDF(vec3 LocalPosition);
-ColorSDF CubeTraceSceneSDF(vec3 LocalPosition);
+float SceneHull(vec3 LocalPosition);
+ColorSDF SceneColor(vec3 LocalPosition);
 
 
 vec3 CubeWorldNormal(vec3 LocalPosition)
@@ -33,7 +33,7 @@ vec3 WorldNormal(vec3 Point)
 	const vec3 Local  = Transform3(WorldToLocal, Point);
 	const vec3 LocalM = Transform3(WorldToLocal, Point - AlmostZero);
 	const vec3 LocalP = Transform3(WorldToLocal, Point + AlmostZero);
-#define SDF(X, Y, Z) SceneSDF(vec3(X, Y, Z)).Distance
+#define SDF(X, Y, Z) SceneColor(vec3(X, Y, Z)).Distance
 	return normalize(vec3(
 		SDF(LocalP.x, Local.y, Local.z) - SDF(LocalM.x, Local.y, Local.z),
 		SDF(Local.x, LocalP.y, Local.z) - SDF(Local.x, LocalM.y, Local.z),
@@ -266,13 +266,19 @@ ColorSDF Wedge(vec3 Point, float Angle)
 }
 
 
-ColorSDF Sphube(vec3 Point, float Alpha, int PaintFn)
+ColorSDF SphubeColor(vec3 Point, float Alpha, int PaintFn)
 {
     ColorSDF a = Sphere(Point, 1.0, PaintFn);
     ColorSDF b = Box(Point, vec3(1.0), PaintFn);
     b.Distance = mix(a.Distance, b.Distance, Alpha);
 	b.InnerDistance = mix(a.InnerDistance, b.InnerDistance, Alpha);
     return b;
+}
+
+
+float SphubeHull(vec3 Point, float Alpha, int PaintFn)
+{
+    return mix(sdSphere(Point, 1.0), sdBox(Point, vec3(1.0)), Alpha);
 }
 
 
@@ -285,7 +291,7 @@ ColorSDF Axes(vec3 Point, float Radius, float Length)
 }
 
 
-ColorSDF FancyBox(vec3 Point, vec3 Bounds)
+ColorSDF FancyBoxColor(vec3 Point, vec3 Bounds)
 {
 	ColorSDF Cube = Box(Point, Bounds, PAINT_WHITE);
 	ColorSDF Inlay = Axes(Point, 0.8, 2.0);
@@ -295,7 +301,49 @@ ColorSDF FancyBox(vec3 Point, vec3 Bounds)
 }
 
 
-ColorSDF Onion(vec3 Point)
+float FancyBoxHull(vec3 Point, vec3 Bounds)
+{
+	return opSubtraction(
+		sdBox(Point, Bounds),
+		sdSphere(Point - vec3(1.0, 1.0, 1.0), 1.3));
+}
+
+
+ColorSDF TangerineColor(vec3 Local)
+{
+	ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
+	return Cut(SphubeColor(Local, 0.5, PAINT_TANGERINE), CutShape);
+}
+
+
+float TangerineHull(vec3 Local)
+{
+	return opIntersection(
+		SphubeHull(Local, 0.5, PAINT_TANGERINE),
+		Local.z);
+}
+
+
+ColorSDF LimeColor(vec3 Local)
+{
+	ColorSDF A = Sphere(Local - vec3(-0.25, 0.25, 0.0), 0.75, PAINT_LIME);
+	ColorSDF B = Sphere(Local - vec3(0.25, -0.25, 0.0), 0.75, PAINT_LIME);
+	ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
+	return Cut(SmoothUnion(A, B, 0.1), CutShape);
+}
+
+
+float LimeHull(vec3 Local)
+{
+	float SpheresPart = opSmoothUnion(
+		sdSphere(Local - vec3(-0.25, 0.25, 0.0), 0.75),
+		sdSphere(Local - vec3(0.25, -0.25, 0.0), 0.75),
+		0.1);
+	return opIntersection(SpheresPart, Local.z);
+}
+
+
+ColorSDF OnionColor(vec3 Point)
 {
 	vec3 Cut1 = vec3(0.8, 1.2, 0.4);
 	vec3 Cut2 = vec3(1.4, 0.8, 0.5);
@@ -324,7 +372,34 @@ ColorSDF Onion(vec3 Point)
 }
 
 
-ColorSDF TreeSDF(vec3 Local)
+float OnionHull(vec3 Point)
+{
+	vec3 Cut1 = Point - vec3(0.8, 1.2, 0.4);
+	vec3 Cut2 = Point - vec3(1.4, 0.8, 0.5);
+	vec3 Cut3 = Point - vec3(0.7, 1.4, 0.3);
+	float Shape = opSubtraction(sdSphere(Point, 1.0), sdSphere((Cut1), 1.5));
+	bool bEven = true;
+	for (float Shell = 0.8; Shell >= 0.2; Shell-= 0.2)
+	{
+		bEven = !bEven;
+		float Next = sdSphere(Point, Shell);
+		float ShellCut;
+		if (bEven)
+		{
+			ShellCut = sdSphere(Cut2, 1.5);
+		}
+		else
+		{
+			ShellCut = sdSphere(Cut3, 1.5);
+		}
+		Shape = opSubtraction(Shape, Next);
+		Shape = opUnion(opSubtraction(Shape, Next), opSubtraction(Next, ShellCut));
+	}
+	return Shape;
+}
+
+
+ColorSDF TreeColor(vec3 Local)
 {
 	const float TreeHeight = 10.0;
 	const float FoliageOffset = 2.0;
@@ -334,4 +409,10 @@ ColorSDF TreeSDF(vec3 Local)
 	ColorSDF Shape = Cylinder(Local, 0.5, TreeHeight, PAINT_TREE_TRUNK);
 	Shape = Union(Shape, Cylinder(FoliageLocal, 2.0, FoliageHeight, PAINT_TREE_LEAVES));
 	return Shape;
+}
+
+
+float TreeHull(vec3 Local)
+{
+	return TreeColor(Local).Distance;
 }
