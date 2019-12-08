@@ -260,7 +260,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 			const double WorldY = double(y) + WorldOffsetY;
 			const double WorldZ = Terrain.Height;
 
-			const int PaintFn = bIsRiver ? 6 + int(bToggle) : 4 + int(bToggle);
+			const int PaintFn = bIsRiver ? SHAPE_WATER_CUBE_1 + int(bToggle) : SHAPE_GRASS_CUBE_1 + int(bToggle);
 			
 			Objects.push_back(ShapeInfo(PaintFn, vec3(1.0, 1.0, 1.0), TRAN(WorldX, WorldY, WorldZ)));
 			bToggle = !bToggle;
