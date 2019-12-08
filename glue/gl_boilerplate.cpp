@@ -96,7 +96,7 @@ bool IsPerforation(std::string Line)
 }
 
 
-StatusCode FillSources(std::vector<std::string>& BreadCrumbs, std::vector<std::string>& Sources, std::string Path)
+StatusCode FillSources(std::vector<std::string>& BreadCrumbs, std::vector<std::string>& Index, std::vector<std::string>& Sources, std::string Path)
 {
 	for (const auto& Visited : BreadCrumbs)
 	{
@@ -115,31 +115,65 @@ StatusCode FillSources(std::vector<std::string>& BreadCrumbs, std::vector<std::s
 	}
 	std::string Line;
 	std::string Source;
+
+	// Scan for prepends
+	bool bFoundPrepend = false;
 	bool bFoundTear = false;
-	int OriginalLine = -1;
+	int TearLine = -1;
+	for (int LineNumber = 0; getline(File, Line); ++LineNumber)
+	{
+		std::string Detour;
+		if (IsPerforation(Line))
+		{
+			bFoundTear = true;
+			TearLine = LineNumber;
+			break;
+		}
+		else if (IsPrepender(Line, Detour))
+		{
+			bFoundPrepend = true;
+			RETURN_ON_FAIL(FillSources(BreadCrumbs, Index, Sources, Detour));
+			continue;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	if (bFoundPrepend && !bFoundTear)
+	{
+		std::cout << "Error in file \"" << Path << "\":\n";
+		std::cout << "  Cannot use prepend statements without a perforated line.\n";
+		return StatusCode::FAIL;
+	}
+
+	Index.push_back(Path);
+	File.seekg(0);
+	if (bFoundTear)
+	{
+		for (int LineNumber = 0; LineNumber <= TearLine; ++LineNumber)
+		{
+			getline(File, Line);
+		}
+		Source = "#line ";
+		Source += std::to_string(TearLine + 1);
+		Source += " ";
+		Source += std::to_string(Index.size() - 1);
+		Source += "\n";
+	}
+	else
+	{
+		Source = "#line 0 ";
+		Source += std::to_string(Index.size() - 1);
+		Source += "\n";
+	}
+
 	while (getline(File, Line))
 	{
-		++OriginalLine;
-		if (!bFoundTear)
-		{
-			std::string Detour;
-			if (IsPerforation(Line))
-			{
-				bFoundTear = true;
-				Source.erase();
-				Source = "#line ";
-				Source += std::to_string(OriginalLine + 1);
-				Source += "\n";
-				continue;
-			}
-			else if (IsPrepender(Line, Detour))
-			{
-				RETURN_ON_FAIL(FillSources(BreadCrumbs, Sources, Detour));
-				continue;
-			}
-		}
 		Source += Line + '\n';
 	}
+
 	File.close();
 	Sources.push_back(Source);
 	return StatusCode::PASS;
@@ -191,9 +225,10 @@ StatusCode CompileShader(GLenum ShaderType, std::string Path, GLuint& ProgramID)
 
 	std::vector<std::string> Sources;
 	std::vector<std::string> BreadCrumbs;
+	std::vector<std::string> Index;
 	Sources.push_back(Extensions);
-	BreadCrumbs.push_back("(generated)");
-	RETURN_ON_FAIL(FillSources(BreadCrumbs, Sources, Path));
+	Index.push_back("(generated block)");
+	RETURN_ON_FAIL(FillSources(BreadCrumbs, Index, Sources, Path));
 
 	const int Count = Sources.size();
 	std::vector<const char*> Strings;
@@ -212,9 +247,9 @@ StatusCode CompileShader(GLenum ShaderType, std::string Path, GLuint& ProgramID)
 		{
 			std::cout << "Generated part:\n" << Sources[0] << "\n\n";
 			std::cout << "Shader string paths:\n";
-			for (int i = 0; i < BreadCrumbs.size(); ++i)
+			for (int i = 0; i < Index.size(); ++i)
 			{
-				std::cout << i << " -> " << BreadCrumbs[i] << "\n";
+				std::cout << i << " -> " << Index[i] << "\n";
 			}
 			std::cout << "\n" << Error << '\n';
 			return StatusCode::FAIL;
