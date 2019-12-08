@@ -33,7 +33,7 @@ vec3 WorldNormal(vec3 Point)
 	const vec3 Local  = Transform3(WorldToLocal, Point);
 	const vec3 LocalM = Transform3(WorldToLocal, Point - AlmostZero);
 	const vec3 LocalP = Transform3(WorldToLocal, Point + AlmostZero);
-#define SDF(X, Y, Z) SceneColor(vec3(X, Y, Z)).Distance
+#define SDF(X, Y, Z) SceneHull(vec3(X, Y, Z))
 	return normalize(vec3(
 		SDF(LocalP.x, Local.y, Local.z) - SDF(LocalM.x, Local.y, Local.z),
 		SDF(Local.x, LocalP.y, Local.z) - SDF(Local.x, LocalM.y, Local.z),
