@@ -31,9 +31,9 @@
 #define PAINT_TREE_TRUNK 12
 #define PAINT_TREE_LEAVES 13
 
-// ------------------------
-// CONFIGURATION PARAMETERS
-// ------------------------
+// -------------
+// CONFIGURATION
+// -------------
 #define RAYMETHOD_BASIC 1
 #define RAYMETHOD_CUBE_ELIMINATE 2
 #define RAYMETHOD_COVERAGE_SEARCH 3
