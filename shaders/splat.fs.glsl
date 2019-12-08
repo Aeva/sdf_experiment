@@ -26,17 +26,23 @@ vec3 GetStartPosition(const vec3 RayDir)
 
 void main()
 {
+	const vec3 WorldRayDir = GetRayDir();
+	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
+	const vec3 LocalRayStart = Transform3(WorldToLocal, WorldRayStart);
+	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
+	const RayData Ray = RayData(WorldRayDir, WorldRayStart, LocalRayDir, LocalRayStart);
+
 	vec3 Position;
 	bool bFound;
 #if ENABLE_CUBETRACE
 	if (ShapeFn > CUBE_TRACEABLES)
 	{
-		bFound = CubeTrace(Position);
+		bFound = CubeTrace(Ray, Position);
 	}
 	else
 #endif
 	{
-		bFound = RayMarch(Position);
+		bFound = RayMarch(Ray, Position);
 	}
 	if (bFound)
 	{

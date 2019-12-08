@@ -5,17 +5,22 @@ prepend: shaders/shapes.glsl
 --------------------------------------------------------------------------------
 
 
-vec3 GetRayDir();
-vec3 GetStartPosition(const vec3 RayDir);
+struct RayData
+{
+	vec3 WorldDir;
+	vec3 WorldStart;
+	vec3 LocalDir;
+	vec3 LocalStart;
+};
 
 
 #if ENABLE_CUBETRACE
-bool CubeTrace(out vec3 Position)
+bool CubeTrace(RayData Ray, out vec3 Position)
 {
-	const vec3 WorldRayDir = GetRayDir();
-	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
-	const vec3 LocalRayStart = Transform3(WorldToLocal, WorldRayStart);
-	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
+	const vec3 WorldRayDir = Ray.WorldDir;
+	const vec3 WorldRayStart = Ray.WorldStart;
+	const vec3 LocalRayDir = Ray.LocalDir;
+	const vec3 LocalRayStart = Ray.LocalStart;
 
 	float SDF = sdBox(LocalRayStart, ShapeBounds);
 	if (IS_SOLID(SDF))
@@ -65,13 +70,13 @@ bool CubeTrace(out vec3 Position)
 
 
 #if USE_RAYMETHOD == RAYMETHOD_BASIC
-bool RayMarch(out vec3 Position)
+bool RayMarch(const RayData Ray, out vec3 Position)
 {
-	const vec3 WorldRayDir = GetRayDir();
-	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
-	vec3 LocalPosition = Transform3(WorldToLocal, WorldRayStart);
-	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalPosition);
+	const vec3 WorldRayDir = Ray.WorldDir;
+	const vec3 WorldRayStart = Ray.WorldStart;
+	const vec3 LocalRayDir = Ray.LocalDir;
 	const vec3 LocalCameraOrigin = Transform3(WorldToLocal, CameraOrigin.xyz);
+	vec3 LocalPosition = Ray.LocalStart;
 
 	for (int Step = 0; Step <= MaxIterations; ++Step)
     {
@@ -97,12 +102,12 @@ bool RayMarch(out vec3 Position)
 
 
 #elif USE_RAYMETHOD == RAYMETHOD_CUBE_ELIMINATE
-bool RayMarch(out vec3 Position)
+bool RayMarch(const RayData Ray, out vec3 Position)
 {
-	const vec3 WorldRayDir = GetRayDir();
-	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
-	const vec3 LocalRayStart = Transform3(WorldToLocal, WorldRayStart);
-	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
+	const vec3 WorldRayDir = Ray.WorldDir;
+	const vec3 WorldRayStart = Ray.WorldStart;
+	const vec3 LocalRayDir = Ray.LocalDir;
+	const vec3 LocalRayStart = Ray.LocalStart;
 
 	const vec3 BoxExtent = ShapeBounds;
 
@@ -186,12 +191,12 @@ struct Coverage
 };
 
 
-bool RayMarch(out vec3 Position)
+bool RayMarch(const RayData Ray, out vec3 Position)
 {
-	const vec3 WorldRayDir = GetRayDir();
-	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
-	const vec3 LocalRayStart = Transform3(WorldToLocal, WorldRayStart);
-	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
+	const vec3 WorldRayDir = Ray.WorldDir;
+	const vec3 WorldRayStart = Ray.WorldStart;
+	const vec3 LocalRayDir = Ray.LocalDir;
+	const vec3 LocalRayStart = Ray.LocalStart;
 
 #define POS_AT_T(T) (T * LocalRayDir + LocalRayStart)
 #define SDF_AT_T(T) SceneHull(POS_AT_T(T))
