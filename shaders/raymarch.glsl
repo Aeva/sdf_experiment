@@ -10,26 +10,22 @@ vec3 GetStartPosition(const vec3 RayDir);
 
 
 #if ENABLE_CUBETRACE
-void CubeTrace(out vec3 Position, out ColorSDF Scene)
+bool CubeTrace(out vec3 Position)
 {
 	const vec3 WorldRayDir = GetRayDir();
 	const vec3 WorldRayStart = GetStartPosition(WorldRayDir);
 	const vec3 LocalRayStart = Transform3(WorldToLocal, WorldRayStart);
 	const vec3 LocalRayDir = normalize(Transform3(WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
 
-	const vec3 BoxExtent = ShapeBounds;
-
-	if (abs(LocalRayStart.x) <= BoxExtent.x &&
-		abs(LocalRayStart.y) <= BoxExtent.y &&
-		abs(LocalRayStart.z) <= BoxExtent.z)
+	float SDF = sdBox(LocalRayStart, ShapeBounds);
+	if (IS_SOLID(SDF))
 	{
 		Position = WorldRayStart;
-		Scene = CubeTraceSceneSDF(LocalRayStart);
-		return;
+		return true;
 	}
 
-	const vec3 Fnord1 = (-BoxExtent - LocalRayStart) / LocalRayDir;
-	const vec3 Fnord2 = (BoxExtent - LocalRayStart) / LocalRayDir;
+	const vec3 Fnord1 = (-ShapeBounds - LocalRayStart) / LocalRayDir;
+	const vec3 Fnord2 = (ShapeBounds - LocalRayStart) / LocalRayDir;
 	float RayDists[6] = \
 	{
 		Fnord1.x,
@@ -54,16 +50,16 @@ void CubeTrace(out vec3 Position, out ColorSDF Scene)
 	for (int i = 0; i < 3; ++i)
 	{
 		const vec3 LocalPosition = RayDists[i] * LocalRayDir + LocalRayStart;
-		Scene = CubeTraceSceneSDF(LocalPosition);
-		if (IS_SOLID(Scene.Distance))
+		SDF = sdBox(LocalPosition, ShapeBounds);
+		if (IS_SOLID(SDF))
 		{
-			Position = Transform3(LocalToWorld, LocalPosition);
-			return;
+			Position = RayDists[i] * WorldRayDir + WorldRayStart;
+			return true;
 		}
 	}
 
 	Position = vec3(0.0);
-	Scene = DiscardSDF;
+	return false;
 }
 #endif // ENABLE_CUBETRACE
 

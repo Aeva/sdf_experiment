@@ -93,24 +93,6 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
 		const vec3 Rind  = vec3(0.552, 0.736, 0.193);
 		Color = PaintTangerine(Shape, Flesh, Fnord, Rind);
 	}
-	else if (Shape.PaintFn == PAINT_FLOOR1)
-	{
-		//Color = vec3(0.0, (Point.z + 2.0) / 2.0, 0.0);
-		Color = vec3(0.0, 0.75, 0.0);
-	}
-	else if (Shape.PaintFn == PAINT_FLOOR2)
-	{
-		//Color = vec3(0.0, (Point.z + 2.0) / 2.0, 0.0) + 0.2;
-		Color = vec3(0.0, 0.5, 0.0);
-	}
-	else if (Shape.PaintFn == PAINT_WATER1)
-	{
-		Color = vec3(0.0, 0.0, abs(Point.z) / 2.0);
-	}
-	else if (Shape.PaintFn == PAINT_WATER2)
-	{
-		Color = vec3(0.0, 0.0, abs(Point.z) / 2.0) + 0.2;
-	}
 	else if (Shape.PaintFn == PAINT_TREE_TRUNK)
 	{
 		Color = vec3(0.627, 0.471, 0.094);
@@ -128,4 +110,34 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
         return vec3(1.0, 0.0, 0.0);
     }
 	return Illuminate(Color, Point, WorldNormal);
+}
+
+
+vec3 PaintCube(vec3 WorldPosition)
+{
+	const vec3 LocalPosition = Transform3(WorldToLocal, WorldPosition);
+	const vec3 WorldNormal = CubeWorldNormal(LocalPosition);
+	vec3 Color = vec3(0.0);
+
+	if (ShapeFn == SHAPE_GRASS_CUBE_1)
+	{
+		Color = vec3(0.0, 0.75, 0.0);
+	}
+	else if (ShapeFn == SHAPE_GRASS_CUBE_2)
+	{
+		Color = vec3(0.0, 0.5, 0.0);
+	}
+	else if (ShapeFn == SHAPE_WATER_CUBE_1)
+	{
+		Color = vec3(0.0, 0.0, abs(WorldPosition.z) / 2.0);
+	}
+	else if (ShapeFn == SHAPE_WATER_CUBE_2)
+	{
+		Color = vec3(0.0, 0.0, abs(WorldPosition.z) / 2.0) + 0.2;
+	}
+	else
+	{
+		return vec3(1.0, 0.0, 0.0);
+	}
+	return Illuminate(Color, WorldPosition, WorldNormal);
 }

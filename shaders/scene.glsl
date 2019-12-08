@@ -22,33 +22,14 @@ ColorSDF SceneSDF(vec3 Local)
 	{
 		return Onion(Local);
 	}
+#if !ENABLE_CUBETRACE
 	else if (ShapeFn > CUBE_TRACEABLES)
 	{
-		return CubeTraceSceneSDF(Local);
+		return Box(Local, ShapeBounds, PAINT_CUBE);
 	}
+#endif
 	else if (ShapeFn == SHAPE_TREE)
 	{
 		return TreeSDF(Local);
-	}
-}
-
-
-ColorSDF CubeTraceSceneSDF(vec3 Local)
-{
-	if (ShapeFn == SHAPE_GRASS_CUBE_1)
-	{
-		return Box(Local, ShapeBounds, PAINT_FLOOR1);
-	}
-	else if (ShapeFn == SHAPE_GRASS_CUBE_2)
-	{
-		return Box(Local, ShapeBounds, PAINT_FLOOR2);
-	}
-	if (ShapeFn == SHAPE_WATER_CUBE_1)
-	{
-		return Box(Local, ShapeBounds, PAINT_WATER1);
-	}
-	else if (ShapeFn == SHAPE_WATER_CUBE_2)
-	{
-		return Box(Local, ShapeBounds, PAINT_WATER2);
 	}
 }

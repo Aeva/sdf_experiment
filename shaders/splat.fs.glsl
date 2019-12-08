@@ -26,18 +26,38 @@ vec3 GetStartPosition(const vec3 RayDir)
 
 void main()
 {
-    vec3 Position;
-    ColorSDF Scene;
+	vec3 Position;
 #if ENABLE_CUBETRACE
 	if (ShapeFn > CUBE_TRACEABLES)
 	{
-		CubeTrace(Position, Scene);
+		if (CubeTrace(Position))
+		{
+			OutColor = vec4(PaintCube(Position), 1.0);
+		}
+		else
+		{
+			discard;
+		}
 	}
 	else
 #endif
 	{
+		ColorSDF Scene;
 		RayMarch(Position, Scene);
+		if (Scene.PaintFn == PAINT_DISCARD)
+		{
+			discard;
+		}
+#if !ENABLE_CUBETRACE
+		else if (Scene.PaintFn == PAINT_CUBE)
+		{
+			OutColor = vec4(PaintCube(Position), 1.0);
+		}
+#endif
+		else
+		{
+			OutColor = vec4(Paint(Position, Scene), 1.0);
+		}
 	}
-	OutColor = vec4(Paint(Position, Scene), 1.0);
 	gl_FragDepth = 1.0 / distance(Position, CameraOrigin.xyz);
 }

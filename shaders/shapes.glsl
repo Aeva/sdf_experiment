@@ -18,6 +18,15 @@ ColorSDF SceneSDF(vec3 LocalPosition);
 ColorSDF CubeTraceSceneSDF(vec3 LocalPosition);
 
 
+vec3 CubeWorldNormal(vec3 LocalPosition)
+{
+	const vec3 Mask = step(ShapeBounds, abs(LocalPosition) + AlmostZero);
+	const vec3 LocalNormal = Mask * sign(LocalPosition.z);
+	const vec3 CubeWorldCenter = Transform3(LocalToWorld, vec3(0.0));
+	return normalize(Transform3(LocalToWorld, LocalNormal) - CubeWorldCenter);
+}
+
+
 #if USE_NORMALMETHOD == NORMALMETHOD_GRADIENT
 vec3 WorldNormal(vec3 Point)
 {
