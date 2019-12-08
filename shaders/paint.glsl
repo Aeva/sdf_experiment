@@ -54,8 +54,45 @@ vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal)
 }
 
 
-vec3 Paint(vec3 Point, ColorSDF Shape)
+vec3 PaintCube(vec3 WorldPosition)
 {
+	const vec3 LocalPosition = Transform3(WorldToLocal, WorldPosition);
+	const vec3 WorldNormal = CubeWorldNormal(LocalPosition);
+	vec3 Color = vec3(0.0);
+
+	if (ShapeFn == SHAPE_GRASS_CUBE_1)
+	{
+		Color = vec3(0.0, 0.75, 0.0);
+	}
+	else if (ShapeFn == SHAPE_GRASS_CUBE_2)
+	{
+		Color = vec3(0.0, 0.5, 0.0);
+	}
+	else if (ShapeFn == SHAPE_WATER_CUBE_1)
+	{
+		Color = vec3(0.0, 0.0, abs(WorldPosition.z) / 2.0);
+	}
+	else if (ShapeFn == SHAPE_WATER_CUBE_2)
+	{
+		Color = vec3(0.0, 0.0, abs(WorldPosition.z) / 2.0) + 0.2;
+	}
+	else
+	{
+		return vec3(1.0, 0.0, 0.0);
+	}
+	return Illuminate(Color, WorldPosition, WorldNormal);
+}
+
+
+vec3 Paint(vec3 Point)
+{
+	if (ShapeFn > CUBE_TRACEABLES)
+	{
+		return PaintCube(Point);
+	}
+
+	ColorSDF Shape = SceneColor(Transform3(WorldToLocal, Point));
+
     // UVW should be about -1.0 to 1.0 in range, but may go over.
     const vec3 UVW = Shape.Local / Shape.Extent;
 
@@ -110,34 +147,4 @@ vec3 Paint(vec3 Point, ColorSDF Shape)
         return vec3(1.0, 0.0, 0.0);
     }
 	return Illuminate(Color, Point, WorldNormal);
-}
-
-
-vec3 PaintCube(vec3 WorldPosition)
-{
-	const vec3 LocalPosition = Transform3(WorldToLocal, WorldPosition);
-	const vec3 WorldNormal = CubeWorldNormal(LocalPosition);
-	vec3 Color = vec3(0.0);
-
-	if (ShapeFn == SHAPE_GRASS_CUBE_1)
-	{
-		Color = vec3(0.0, 0.75, 0.0);
-	}
-	else if (ShapeFn == SHAPE_GRASS_CUBE_2)
-	{
-		Color = vec3(0.0, 0.5, 0.0);
-	}
-	else if (ShapeFn == SHAPE_WATER_CUBE_1)
-	{
-		Color = vec3(0.0, 0.0, abs(WorldPosition.z) / 2.0);
-	}
-	else if (ShapeFn == SHAPE_WATER_CUBE_2)
-	{
-		Color = vec3(0.0, 0.0, abs(WorldPosition.z) / 2.0) + 0.2;
-	}
-	else
-	{
-		return vec3(1.0, 0.0, 0.0);
-	}
-	return Illuminate(Color, WorldPosition, WorldNormal);
 }

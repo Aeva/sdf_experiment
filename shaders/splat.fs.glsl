@@ -27,33 +27,20 @@ vec3 GetStartPosition(const vec3 RayDir)
 void main()
 {
 	vec3 Position;
+	bool bFound;
 #if ENABLE_CUBETRACE
 	if (ShapeFn > CUBE_TRACEABLES)
 	{
-		if (CubeTrace(Position))
-		{
-			OutColor = vec4(PaintCube(Position), 1.0);
-		}
-		else
-		{
-			discard;
-		}
+		bFound = CubeTrace(Position);
 	}
 	else
 #endif
-	if (RayMarch(Position))
 	{
-		ColorSDF Scene = SceneColor(Transform3(WorldToLocal, Position));
-#if !ENABLE_CUBETRACE
-		if (Scene.PaintFn == PAINT_CUBE)
-		{
-			OutColor = vec4(PaintCube(Position), 1.0);
-		}
-		else
-#endif
-		{
-			OutColor = vec4(Paint(Position, Scene), 1.0);
-		}
+		bFound = RayMarch(Position);
+	}
+	if (bFound)
+	{
+		OutColor = vec4(Paint(Position), 1.0);
 	}
 	else
 	{
