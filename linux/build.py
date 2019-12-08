@@ -34,7 +34,7 @@ def build_program():
         os.chdir("..")
         
     compiler = [find_compiler()]
-    compiler_args = ["-osdf_experiment", "-std=c++14", "-Idependencies/glad/include/"]
+    compiler_args = ["-osdf_experiment", "-std=c++14", "-Idependencies/glad/include/", "-Idependencies/lodepng/include/"]
     linker_args = pkg_config("pkg-config --static --libs glfw3")
     linker_args += pkg_config("pkg-config --static --libs glm")
     defines = {}
@@ -56,7 +56,7 @@ def build_program():
     defines["FPS_COUNTER"] = 1
     defines["PROFILING"] = 1
 
-    sources = ["dependencies/glad/src/glad.c"]
+    sources = ["dependencies/glad/src/glad.c", "dependencies/lodepng/src/lodepng.cpp"]
     sources += glob.glob("glue/**/*.cpp", recursive=True)
     sources += glob.glob("*.cpp", recursive=True)
 
