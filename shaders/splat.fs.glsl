@@ -46,7 +46,50 @@ void main()
 	}
 	if (bFound)
 	{
+#if VISUALIZE_ALIASING_GRADIENT
+		OutColor = vec4(0.0, 1.0, 0.0, 1.0);
+		const float Scale = 10.0;
+		if (dFdx(gl_FragCoord.x) == 1.0)
+		{
+			OutColor.g -= 0.5;
+			OutColor.r = length(dFdx(Position)) * Scale;
+		}
+		if (dFdy(gl_FragCoord.y) == 1.0)
+		{
+			OutColor.g -= 0.5;
+			OutColor.b = length(dFdy(Position)) * Scale;
+		}
+#else
 		OutColor = vec4(Paint(Position), 1.0);
+#if ENABLE_ANTIALIASING
+		float Count = 1.0;
+		const float Samples = 8.0;
+		const float InvSamples = 1.0 / Samples;
+		if (dFdx(gl_FragCoord.x) == 1.0)
+		{
+			const vec3 Offset = dFdx(Position);
+			for (float i = 0.0; i < Samples; ++i)
+			{
+				const float Scale = i * InvSamples * 0.75;
+				OutColor.xyz += Paint(Offset * Scale + Position);
+				OutColor.xyz += Paint(-Offset * Scale + Position);
+			}
+			Count += Samples * 2.0;
+		}
+		if (dFdy(gl_FragCoord.y) == 1.0)
+		{
+			const vec3 Offset = dFdy(Position);
+			for (float i = 0.0; i < Samples; ++i)
+			{
+				const float Scale = i * InvSamples * 0.75;
+				OutColor.xyz += Paint(Offset * Scale + Position);
+				OutColor.xyz += Paint(-Offset * Scale + Position);
+			}
+			Count += Samples * 2.0;
+		}
+		OutColor.xyz /= Count;
+#endif // ENABLE_ANTIALIASING
+#endif // VISUALIZE_ALIASING_GRADIENT
 	}
 	else
 	{
