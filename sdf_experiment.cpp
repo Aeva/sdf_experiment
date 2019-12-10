@@ -12,7 +12,6 @@ using namespace glm;
 ShaderPipeline SplatShader;
 Buffer ScreenInfo;
 Buffer ViewInfo;
-Buffer CameraInfo;
 Buffer AllObjects;
 
 
@@ -55,6 +54,16 @@ struct ShapeUploadInfo
 		, LocalToWorld(InShape.LocalToWorld)
 		, WorldToLocal(InShape.WorldToLocal)
 	{}
+};
+
+
+struct ViewInfoUpload
+{
+	mat4 WorldToView;
+	mat4 ViewToWorld;
+	mat4 ViewToClip;
+	mat4 ClipToView;
+	vec4 CameraOrigin;
 };
 
 
@@ -315,10 +324,12 @@ void SDFExperiment::Render()
 	const vec3 OriginStart = vec3(15.0, 0.0, 2.0);
 	const vec3 OriginMiddle = vec3(5.0, 5.0, 2.0);
 	const vec3 OriginEnd = vec3(10.0, 10.0, 5.0);
+	//const vec3 OriginEnd = vec3(5.0, 5.0, 3.0);
 	const float Alpha = min(Time / 5.0, 1.0);
 
 	const vec3 CameraOrigin = mix(mix(OriginStart, OriginMiddle, Alpha), mix(OriginMiddle, OriginEnd, Alpha), Alpha);
 	const vec3 CameraFocus = vec3(0.0, 0.0, 0.75);
+	//const vec3 CameraFocus = vec3(3.0, 0.0, 0.5);
 
 	const mat4 WorldToView = lookAt(CameraOrigin, CameraFocus, vec3(0.0, 0.0, 1.0));
 	const mat4 ViewToWorld = inverse(WorldToView);
@@ -331,21 +342,19 @@ void SDFExperiment::Render()
 	const mat4 ClipToView = inverse(ViewToClip);
 
 	{
-		const size_t Matrices = 4;
-		mat4 BufferData[Matrices] = { WorldToView, ViewToWorld, ViewToClip, ClipToView };
-		ViewInfo.Upload((void*)&BufferData, sizeof(mat4) * Matrices);
-	}
-
-	{
-		const size_t Vectors = 1;
-		vec4 BufferData[1] = { vec4(CameraOrigin, 1.0) };
-		CameraInfo.Upload((void*)&BufferData, sizeof(vec4) * Vectors);
+		ViewInfoUpload BufferData = {
+			WorldToView,
+			ViewToWorld,
+			ViewToClip,
+			ClipToView,
+			vec4(CameraOrigin, float(Time))
+		};
+		ViewInfo.Upload((void*)&BufferData, sizeof(BufferData));
 	}
 
 	SplatShader.Activate();
 	ScreenInfo.Bind(GL_UNIFORM_BUFFER, 1);
 	ViewInfo.Bind(GL_UNIFORM_BUFFER, 2);
-	CameraInfo.Bind(GL_UNIFORM_BUFFER, 3);
 
 	// Update the information for all objects.
 	std::vector<ShapeUploadInfo> VisibleObjects;

@@ -121,6 +121,21 @@ float opSmoothUnion(float d1, float d2, float k)
 }
 
 
+float sdGloop(vec3 Point, float Scale)
+{
+	return sin(Scale * Point.x) * sin(Scale * Point.y) * sin(Scale * Point.z);
+}
+
+
+vec3 Twist(vec3 Point, float Intensity)
+{
+	float C = cos(Intensity * Point.z);
+    float S = sin(Intensity * Point.z);
+    mat2  M = mat2(C, -S, S, C);
+    return vec3(M * Point.xy, Point.z);
+}
+
+
 // ---------------
 // Shape Operators
 // ---------------
@@ -296,7 +311,6 @@ ColorSDF FancyBoxColor(vec3 Point, vec3 Bounds)
 	ColorSDF Cube = Box(Point, Bounds, PAINT_WHITE);
 	ColorSDF Inlay = Axes(Point, 0.8, 2.0);
 	ColorSDF Shape = Replace(Cube, Inlay);
-	Shape = Cut(Shape, Sphere((Point - vec3(1.0, 1.0, 1.0)), 1.3, 0));
 	return Shape;
 }
 
@@ -309,27 +323,42 @@ float FancyBoxHull(vec3 Point, vec3 Bounds)
 }
 
 
+#define USE_TWIST 0
 ColorSDF TangerineColor(vec3 Local)
 {
-	ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
-	return Cut(SphubeColor(Local, 0.5, PAINT_TANGERINE), CutShape);
+#if USE_TWIST
+	Local = Twist(Local, length(Local.xy) * 5.0);
+#endif // USE_TWIST
+	return SphubeColor(Local, 0.5, PAINT_TANGERINE);
 }
 
 
 float TangerineHull(vec3 Local)
 {
-	return opIntersection(
-		SphubeHull(Local, 0.5, PAINT_TANGERINE),
-		Local.z);
+#if USE_TWIST
+#if ENABLE_HOVERING_SHAPES
+	const float CounterZ = (-sin(Time * 2.0 + 1.0) + 0.5) / 2.5;
+	vec3 BoxLocal = Local - vec3(0.0, 0.0, CounterZ);
+#else
+	vec3 BoxLocal = Local;
+#endif // ENABLE_HOVERING_SHAPES
+	const float Repeat = 0.5;
+	BoxLocal.z = mod(BoxLocal.z + 0.5 * Repeat, Repeat) - 0.5 * Repeat;
+	Local = Twist(Local, length(Local.xy) * 5.0);
+	return opSubtraction(SphubeHull(Local, 0.5, PAINT_TANGERINE), sdBox(BoxLocal, vec3(2.0, 2.0, Repeat * 0.3)));
+	//return opSubtraction(opIntersection(SphubeHull(Local, 0.5, PAINT_TANGERINE), sdGloop(Local, 10.0)), sdBox(BoxLocal, vec3(2.0, 2.0, Repeat * 0.3)));
+#else
+	return opSubtraction(SphubeHull(Local, 0.5, PAINT_TANGERINE), -Local.z);
+#endif // USE_TWIST
 }
+#undef USE_TWIST
 
 
 ColorSDF LimeColor(vec3 Local)
 {
 	ColorSDF A = Sphere(Local - vec3(-0.25, 0.25, 0.0), 0.75, PAINT_LIME);
 	ColorSDF B = Sphere(Local - vec3(0.25, -0.25, 0.0), 0.75, PAINT_LIME);
-	ColorSDF CutShape = ColorSDF(-Local.z, -Local.z, 0, Local, vec3(1.0, 1.0, 1.0));
-	return Cut(SmoothUnion(A, B, 0.1), CutShape);
+	return SmoothUnion(A, B, 0.1);
 }
 
 

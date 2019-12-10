@@ -7,14 +7,9 @@ uniform ViewInfoBlock
 	mat4 ViewToWorld;
 	mat4 ViewToClip;
 	mat4 ClipToView;
+	vec4 CameraOrigin; // The w component packs the elapsed time in seconds.
 };
-
-
-layout(std140, binding = 3)
-uniform CameraInfoBlock
-{
-	vec4 CameraOrigin;
-};
+#define Time CameraOrigin.w
 
 
 in vec4 gl_FragCoord;
