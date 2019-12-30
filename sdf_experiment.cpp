@@ -542,7 +542,7 @@ void SDFExperiment::Render(const int FrameCounter)
 		}
 		const double AverageTotalDrawTimeNs = AverageDepthPassTimeNs + AverageColorPassTimeNs;
 		Log::GetStream() \
-			<< "Objects Drawn: " << VisibleObjectsCount << "\n"
+			<< "Objects Drawn: " << VisibleObjectsCount << " / " << Objects.size() << "\n"
 			<< "Average GPU Times:\n"
 			<< " - Depth: " << (AverageDepthPassTimeNs * 1e-6) << " ms\n"
 			<< " - Color: " << (AverageColorPassTimeNs * 1e-6) << " ms\n"

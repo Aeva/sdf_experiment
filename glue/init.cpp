@@ -218,7 +218,7 @@ void DrawFrame()
 	}
 
 	Log::GetStream() \
-		<< "CPU Times:\n"
+		<< "Average CPU Times:\n"
 		<< " - Render: " << AverageRenderTimeMS << " ms\n"
 		<< " - Present: " << AveragePresentTimeMS << " ms\n"
 		<< " - FPS: " << AverageFPS << "\n";
