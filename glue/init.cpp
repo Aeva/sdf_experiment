@@ -3,6 +3,9 @@
 #include "errors.h"
 #include "gl_boilerplate.h"
 #include "../sdf_experiment.h"
+#if PROFILING
+#include "logging.h"
+#endif //PROFILING
 
 #if RENDERDOC_CAPTURE_AND_QUIT
 #include "../renderdoc.h"
@@ -159,16 +162,22 @@ StatusCode DemoSetup ()
 	return StatusCode::PASS;
 }
 
-
 void DrawFrame()
 {
-#if FPS_COUNTER
-	static double LastTime = 0.0;
-	const double Now = glfwGetTime();
-	const double Delta = Now - LastTime;
-	LastTime = Now;
-	const double FPS = 1.0 / Delta;
-	std::cout << "FPS: " << FPS << "\n";
+	static int FrameCounter = -1;
+	FrameCounter += 1;
+#if PROFILING
+	const int StatSamples = 50;
+	static double FPS[StatSamples] = { 0.0 };
+	static double RenderTimeMS[StatSamples] = { 0.0 };
+	static double PresentTimeMS[StatSamples] = { 0.0 };
+	{
+		static double LastTime = 0.0;
+		const double Now = glfwGetTime();
+		FPS[FrameCounter % StatSamples] = 1.0 / (Now - LastTime);
+		LastTime = Now;
+	}
+	Log::GetStream() << "\n\n";
 #endif
 
 	if (WindowIsDirty)
@@ -177,24 +186,43 @@ void DrawFrame()
 		WindowIsDirty = false;
 	}
 
-#if PROFILING && 0
+#if PROFILING
 	{
 		const double Start = glfwGetTime();
 #endif
-		SDFExperiment::Render();
-#if PROFILING && 0
-		const double Delta = glfwGetTime() - Start;
-		std::cout << "\nCPU Times:\n";
-		std::cout << " - FrameTime: " << Delta * 1000.0 << " ms\n";
+		SDFExperiment::Render(FrameCounter);
+#if PROFILING
+		RenderTimeMS[FrameCounter % StatSamples] = (glfwGetTime() - Start) * 1000.0;
 	}
 	{
 		const double Start = glfwGetTime();
 #endif
 		glfwSwapBuffers(Window);
-#if PROFILING && 0
-		const double Delta = glfwGetTime() - Start;
-		std::cout << " - Present: " << Delta * 1000.0 << " ms\n\n\n\n\n";
+		glFinish();
+#if PROFILING
+		PresentTimeMS[FrameCounter % StatSamples] = (glfwGetTime() - Start) * 1000.0;
 	}
+
+	double AverageFPS = 0.0;
+	double AverageRenderTimeMS = 0.0;
+	double AveragePresentTimeMS = 0.0;
+	{
+		const int SampleCount = (FrameCounter % StatSamples) + 1;
+		const double InvSampleCount = 1.0 / double(SampleCount);
+		for (int Sample = 0; Sample < SampleCount; ++Sample)
+		{
+			AverageFPS += FPS[Sample] * InvSampleCount;
+			AverageRenderTimeMS += RenderTimeMS[Sample] * InvSampleCount;
+			AveragePresentTimeMS += PresentTimeMS[Sample] * InvSampleCount;
+		}
+	}
+
+	Log::GetStream() \
+		<< "CPU Times:\n"
+		<< " - Render: " << AverageRenderTimeMS << " ms\n"
+		<< " - Present: " << AveragePresentTimeMS << " ms\n"
+		<< " - FPS: " << AverageFPS << "\n";
+	Log::Flush();
 #endif
 	glfwPollEvents();
 }

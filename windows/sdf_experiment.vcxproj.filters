@@ -31,6 +31,9 @@
     <ClCompile Include="..\dependencies\lodepng\src\lodepng.cpp">
       <Filter>LodePNG</Filter>
     </ClCompile>
+    <ClCompile Include="..\glue\logging.cpp">
+      <Filter>glue</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\glue\errors.h">
@@ -40,6 +43,9 @@
       <Filter>glue</Filter>
     </ClInclude>
     <ClInclude Include="..\sdf_experiment.h" />
+    <ClInclude Include="..\glue\logging.h">
+      <Filter>glue</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\shaders\screen.glsl">

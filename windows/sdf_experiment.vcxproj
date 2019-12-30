@@ -139,11 +139,13 @@
     <ClCompile Include="..\glue\errors.cpp" />
     <ClCompile Include="..\glue\gl_boilerplate.cpp" />
     <ClCompile Include="..\glue\init.cpp" />
+    <ClCompile Include="..\glue\logging.cpp" />
     <ClCompile Include="..\sdf_experiment.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\glue\errors.h" />
     <ClInclude Include="..\glue\gl_boilerplate.h" />
+    <ClInclude Include="..\glue\logging.h" />
     <ClInclude Include="..\sdf_experiment.h" />
   </ItemGroup>
   <ItemGroup>

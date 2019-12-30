@@ -7,6 +7,10 @@
 #include <iostream>
 #include "shaders/defs.glsl"
 
+#if PROFILING
+#include "glue/logging.h"
+#endif //PROFILING
+
 using namespace glm;
 
 ShaderPipeline DepthShader;
@@ -104,7 +108,8 @@ const size_t AllObjectsSize = sizeof(ShapeInfo) * ObjectsCount;
 #if PROFILING
 GLuint FrameStartTime;
 GLuint FrameEndTime;
-GLuint DrawTime;
+GLuint DepthPassTime;
+GLuint ColorPassTime;
 GLint GetQueryValue(GLuint Id, GLenum Param)
 {
 	GLint Value = 0;
@@ -161,7 +166,7 @@ StatusCode ReadMapFile(const char* FileName, std::vector<unsigned char>* ImageDa
 	{
 		std::cout \
 			<< "Failed to read " << FileName << "!\n"
-			<< " - Reason: Image not expected sive.\n";
+			<< " - Reason: Image not expected size.\n";
 		return StatusCode::FAIL;
 	}
 	return StatusCode::PASS;
@@ -257,7 +262,8 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 #if PROFILING
 	glGenQueries(1, &FrameStartTime);
 	glGenQueries(1, &FrameEndTime);
-	glGenQueries(1, &DrawTime);
+	glGenQueries(1, &DepthPassTime);
+	glGenQueries(1, &ColorPassTime);
 #endif
 
 	AllocateRenderTargets();
@@ -351,7 +357,7 @@ void SDFExperiment::WindowIsDirty()
 }
 
 
-void SDFExperiment::Render()
+void SDFExperiment::Render(const int FrameCounter)
 {
 #if PROFILING
 	glQueryCounter(FrameStartTime, GL_TIMESTAMP);
@@ -483,7 +489,7 @@ void SDFExperiment::Render()
 	if (VisibleObjectsCount > 0)
 	{
 #if PROFILING
-		glBeginQuery(GL_TIME_ELAPSED, DrawTime);
+		glBeginQuery(GL_TIME_ELAPSED, DepthPassTime);
 #endif
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, VisibleObjectsCount);
 #if PROFILING
@@ -503,38 +509,45 @@ void SDFExperiment::Render()
 	}
 #endif //ENABLE_RESOLUTION_SCALING
 
+#if PROFILING
+	glBeginQuery(GL_TIME_ELAPSED, ColorPassTime);
+#endif
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+#if PROFILING
+	glEndQuery(GL_TIME_ELAPSED);
+#endif
 
 
 #if PROFILING
 	glQueryCounter(FrameEndTime, GL_TIMESTAMP);
 	{
-		GLint ElapsedFrameTimeNS = GetQueryValue(FrameEndTime, GL_QUERY_RESULT) - GetQueryValue(FrameStartTime, GL_QUERY_RESULT);
-		GLint TotalDrawTimeNS = GetQueryValue(DrawTime, GL_QUERY_RESULT);
+		const int StatSamples = 100;
+		static double DepthPassTimeSamplesNS[StatSamples] = { 0.0 };
+		static double ColorPassTimeSamplesNS[StatSamples] = { 0.0 };
 
-		static int FrameCounter = 0;
-		FrameCounter += 1;
-
-		const int StatSamples = 500;
-		static double TotalDrawTimesNS[StatSamples] = { 0.0 };
-		const int Sample = FrameCounter % StatSamples;
-		TotalDrawTimesNS[Sample] = double(TotalDrawTimeNS);
-
-		if (Sample == StatSamples - 1)
 		{
-			double TotalDrawTime = 0.0;
-			for (int i = 0; i < StatSamples; ++i)
-			{
-				TotalDrawTime += TotalDrawTimesNS[i];
-			}
-			TotalDrawTime /= double(StatSamples);
-			TotalDrawTime *= 1e-6;
-			std::cout \
-				<< "Objects Drawn: " << VisibleObjectsCount << "\n"
-				<< "Average GPU Times:\n"
-				<< " - All Draws: " << TotalDrawTime << " ms\n"
-				<< " - Per Shape: " << TotalDrawTime / double(VisibleObjectsCount) << " ms\n";
+			const int Sample = FrameCounter % StatSamples;
+			DepthPassTimeSamplesNS[Sample] = double(GetQueryValue(DepthPassTime, GL_QUERY_RESULT));
+			ColorPassTimeSamplesNS[Sample] = double(GetQueryValue(ColorPassTime, GL_QUERY_RESULT));
 		}
+
+		const double ValidSamples = min(FrameCounter + 1, StatSamples);
+		const double InvValidSamples = 1.0 / ValidSamples;
+		double AverageDepthPassTimeNs = 0.0;
+		double AverageColorPassTimeNs = 0.0;
+		for (int Sample = 0; Sample < ValidSamples; ++Sample)
+		{
+			AverageDepthPassTimeNs += DepthPassTimeSamplesNS[Sample] * InvValidSamples;
+			AverageColorPassTimeNs += ColorPassTimeSamplesNS[Sample] * InvValidSamples;
+		}
+		const double AverageTotalDrawTimeNs = AverageDepthPassTimeNs + AverageColorPassTimeNs;
+		Log::GetStream() \
+			<< "Objects Drawn: " << VisibleObjectsCount << "\n"
+			<< "Average GPU Times:\n"
+			<< " - Depth: " << (AverageDepthPassTimeNs * 1e-6) << " ms\n"
+			<< " - Color: " << (AverageColorPassTimeNs * 1e-6) << " ms\n"
+			<< " - Total: " << (AverageTotalDrawTimeNs * 1e-6) << " ms\n"
+			<< "\n";
 	}
 #endif
 }
