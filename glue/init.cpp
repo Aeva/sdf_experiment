@@ -174,6 +174,7 @@ void DrawFrame()
 	if (WindowIsDirty)
 	{
 		SDFExperiment::WindowIsDirty();
+		WindowIsDirty = false;
 	}
 
 #if PROFILING && 0
