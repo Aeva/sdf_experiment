@@ -15,12 +15,13 @@ struct RayData
 
 
 #if ENABLE_CUBETRACE
-bool CubeTrace(RayData Ray, out vec3 Position)
+bool CubeTrace(ObjectInfo Object, RayData Ray, out vec3 Position)
 {
 	const vec3 WorldRayDir = Ray.WorldDir;
 	const vec3 WorldRayStart = Ray.WorldStart;
 	const vec3 LocalRayDir = Ray.LocalDir;
 	const vec3 LocalRayStart = Ray.LocalStart;
+	const vec3 ShapeBounds = Object.ShapeParams.xyz;
 
 	float SDF = sdBox(LocalRayStart, ShapeBounds);
 	if (IS_SOLID(SDF))
@@ -70,26 +71,26 @@ bool CubeTrace(RayData Ray, out vec3 Position)
 
 
 #if USE_RAYMETHOD == RAYMETHOD_BASIC
-bool RayMarch(const RayData Ray, out vec3 Position)
+bool RayMarch(ObjectInfo Object, const RayData Ray, out vec3 Position)
 {
 	const vec3 WorldRayDir = Ray.WorldDir;
 	const vec3 WorldRayStart = Ray.WorldStart;
 	const vec3 LocalRayDir = Ray.LocalDir;
-	const vec3 LocalCameraOrigin = Transform3(WorldToLocal, CameraOrigin.xyz);
+	const vec3 LocalCameraOrigin = Transform3(Object.WorldToLocal, CameraOrigin.xyz);
 	vec3 LocalPosition = Ray.LocalStart;
 
 	for (int Step = 0; Step <= MaxIterations; ++Step)
     {
-		float SDF = SceneHull(LocalPosition);
+		float SDF = SceneHull(Object.ShapeParams, LocalPosition);
 		if (IS_SOLID(SDF))
         {
-			Position = Transform3(LocalToWorld, LocalPosition);
+			Position = Transform3(Object.LocalToWorld, LocalPosition);
 			return true;
         }
 		else
 		{
 			LocalPosition += LocalRayDir * SDF;
-			if (distance(LocalPosition, LocalCameraOrigin) > DepthRange.y)
+			if (distance(LocalPosition, LocalCameraOrigin) > Object.DepthRange.y)
 			{
 				break;
 			}
@@ -102,14 +103,13 @@ bool RayMarch(const RayData Ray, out vec3 Position)
 
 
 #elif USE_RAYMETHOD == RAYMETHOD_CUBE_ELIMINATE
-bool RayMarch(const RayData Ray, out vec3 Position)
+bool RayMarch(ObjectInfo Object, const RayData Ray, out vec3 Position)
 {
 	const vec3 WorldRayDir = Ray.WorldDir;
 	const vec3 WorldRayStart = Ray.WorldStart;
 	const vec3 LocalRayDir = Ray.LocalDir;
 	const vec3 LocalRayStart = Ray.LocalStart;
-
-	const vec3 BoxExtent = ShapeBounds;
+	const vec3 ShapeBounds = Object.ShapeParams.xyz;
 
 	float SDF = sdBox(LocalRayStart, ShapeBounds);
 	if (IS_SOLID(SDF))
@@ -118,8 +118,8 @@ bool RayMarch(const RayData Ray, out vec3 Position)
 		return true;
 	}
 
-	const vec3 Fnord1 = (-BoxExtent - LocalRayStart) / LocalRayDir;
-	const vec3 Fnord2 = (BoxExtent - LocalRayStart) / LocalRayDir;
+	const vec3 Fnord1 = (-ShapeBounds - LocalRayStart) / LocalRayDir;
+	const vec3 Fnord2 = (ShapeBounds - LocalRayStart) / LocalRayDir;
 	float RayDists[6] = \
 	{
 		Fnord1.x,
@@ -146,7 +146,7 @@ bool RayMarch(const RayData Ray, out vec3 Position)
 	for (int i = 0; i < 3; ++i)
 	{
 		vec3 LocalPosition = RayDists[i] * LocalRayDir + LocalRayStart;
-		if (IS_SOLID(sdBox(LocalPosition, BoxExtent)))
+		if (IS_SOLID(sdBox(LocalPosition, ShapeBounds)))
 		{
 			RayDistance = RayDists[i];
 			bFound = true;
@@ -159,10 +159,10 @@ bool RayMarch(const RayData Ray, out vec3 Position)
 		for (int Step = 0; Step <= MaxIterations; ++Step)
 	    {
 			const vec3 LocalPosition = RayDistance * LocalRayDir + LocalRayStart;
-			const float SDF = SceneHull(LocalPosition);
+			const float SDF = SceneHull(Object.ShapeParams, LocalPosition);
 			if (IS_SOLID(SDF))
 		    {
-				Position = Transform3(LocalToWorld, LocalPosition);
+				Position = Transform3(Object.LocalToWorld, LocalPosition);
 				return true;
 			}
 			else
@@ -191,15 +191,16 @@ struct Coverage
 };
 
 
-bool RayMarch(const RayData Ray, out vec3 Position)
+bool RayMarch(ObjectInfo Object, const RayData Ray, out vec3 Position)
 {
 	const vec3 WorldRayDir = Ray.WorldDir;
 	const vec3 WorldRayStart = Ray.WorldStart;
 	const vec3 LocalRayDir = Ray.LocalDir;
 	const vec3 LocalRayStart = Ray.LocalStart;
+	const vec3 ShapeBounds = Object.ShapeParams.xyz;
 
 #define POS_AT_T(T) (T * LocalRayDir + LocalRayStart)
-#define SDF_AT_T(T) SceneHull(POS_AT_T(T))
+#define SDF_AT_T(T) SceneHull(Object.ShapeParams, POS_AT_T(T))
 #define SPAN(T, SD) T-abs(SD), T+abs(SD), (IS_SOLID(SD) ? -1 : 1)
 
 	// TODO: I don't think this is correct.
@@ -257,7 +258,7 @@ bool RayMarch(const RayData Ray, out vec3 Position)
 	{
 		const float HitT = max(StartT, Cursor.Low);
 		const vec3 LocalPosition = POS_AT_T(HitT);
-		Position = Transform3(LocalToWorld, LocalPosition);
+		Position = Transform3(Object.LocalToWorld, LocalPosition);
 		return true;
 	}
 	else

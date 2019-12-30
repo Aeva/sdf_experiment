@@ -1,3 +1,4 @@
+prepend: shaders/shapes.glsl
 --------------------------------------------------------------------------------
 
 vec3 PaintTangerine(const ColorSDF Shape, const vec3 Flesh, const vec3 Fnord, const vec3 Rind)
@@ -54,10 +55,11 @@ vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal)
 }
 
 
-vec3 PaintCube(vec3 WorldPosition)
+vec3 PaintCube(ObjectInfo Object, vec3 WorldPosition)
 {
-	const vec3 LocalPosition = Transform3(WorldToLocal, WorldPosition);
-	const vec3 WorldNormal = CubeWorldNormal(LocalPosition);
+	int ShapeFn = int(Object.ShapeParams.w);
+	const vec3 LocalPosition = Transform3(Object.WorldToLocal, WorldPosition);
+	const vec3 WorldNormal = CubeWorldNormal(Object, LocalPosition);
 	vec3 Color = vec3(0.0);
 
 	if (ShapeFn == SHAPE_GRASS_CUBE_1)
@@ -84,19 +86,21 @@ vec3 PaintCube(vec3 WorldPosition)
 }
 
 
-vec3 Paint(vec3 Point)
+vec3 Paint(ObjectInfo Object, vec3 Point)
 {
+	int ShapeFn = int(Object.ShapeParams.w);
+
 	if (ShapeFn > CUBE_TRACEABLES)
 	{
-		return PaintCube(Point);
+		return PaintCube(Object, Point);
 	}
-
-	ColorSDF Shape = SceneColor(Transform3(WorldToLocal, Point));
+	
+	ColorSDF Shape = SceneColor(Object.ShapeParams, Transform3(Object.WorldToLocal, Point));
 
     // UVW should be about -1.0 to 1.0 in range, but may go over.
     const vec3 UVW = Shape.Local / Shape.Extent;
 
-	const vec3 WorldNormal = WorldNormal(Point);
+	const vec3 WorldNormal = WorldNormal(Object, Point);
 
 	vec3 Color = vec3(0.0);
 
@@ -138,13 +142,10 @@ vec3 Paint(vec3 Point)
 	{
 		Color = vec3(0.376, 0.784, 0.031);
 	}
-    else if (Shape.PaintFn == PAINT_DISCARD)
-    {
-		discard;
-    }
     else
     {
         return vec3(1.0, 0.0, 0.0);
     }
+
 	return Illuminate(Color, Point, WorldNormal);
 }

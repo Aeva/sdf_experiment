@@ -42,12 +42,6 @@
     <ClInclude Include="..\sdf_experiment.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\shaders\splat.fs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\splat.vs.glsl">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="..\shaders\screen.glsl">
       <Filter>shaders</Filter>
     </None>
@@ -70,6 +64,21 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="..\shaders\scene.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\depth.fs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\depth.vs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\color.fs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\color.vs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\objects.glsl">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

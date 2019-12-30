@@ -1,3 +1,4 @@
+prepend: shaders/objects.glsl
 --------------------------------------------------------------------------------
 
 
@@ -14,26 +15,26 @@ struct ColorSDF
 const ColorSDF DiscardSDF = ColorSDF(0.0, 0.0, PAINT_DISCARD, vec3(0.0), vec3(0.0));
 
 
-float SceneHull(vec3 LocalPosition);
-ColorSDF SceneColor(vec3 LocalPosition);
+float SceneHull(vec4 ShapeParams, vec3 LocalPosition);
+ColorSDF SceneColor(vec4 ShapeParams, vec3 LocalPosition);
 
 
-vec3 CubeWorldNormal(vec3 LocalPosition)
+vec3 CubeWorldNormal(ObjectInfo Object, vec3 LocalPosition)
 {
-	const vec3 Mask = step(ShapeBounds, abs(LocalPosition) + AlmostZero);
+	const vec3 Mask = step(Object.ShapeParams.xyz, abs(LocalPosition) + AlmostZero);
 	const vec3 LocalNormal = Mask * sign(LocalPosition.z);
-	const vec3 CubeWorldCenter = Transform3(LocalToWorld, vec3(0.0));
-	return normalize(Transform3(LocalToWorld, LocalNormal) - CubeWorldCenter);
+	const vec3 CubeWorldCenter = Transform3(Object.LocalToWorld, vec3(0.0));
+	return normalize(Transform3(Object.LocalToWorld, LocalNormal) - CubeWorldCenter);
 }
 
 
 #if USE_NORMALMETHOD == NORMALMETHOD_GRADIENT
-vec3 WorldNormal(vec3 Point)
+vec3 WorldNormal(ObjectInfo Object, vec3 Point)
 {
-	const vec3 Local  = Transform3(WorldToLocal, Point);
-	const vec3 LocalM = Transform3(WorldToLocal, Point - AlmostZero);
-	const vec3 LocalP = Transform3(WorldToLocal, Point + AlmostZero);
-#define SDF(X, Y, Z) SceneHull(vec3(X, Y, Z))
+	const vec3 Local  = Transform3(Object.WorldToLocal, Point);
+	const vec3 LocalM = Transform3(Object.WorldToLocal, Point - AlmostZero);
+	const vec3 LocalP = Transform3(Object.WorldToLocal, Point + AlmostZero);
+#define SDF(X, Y, Z) SceneHull(Object.ShapeParams, vec3(X, Y, Z))
 	return normalize(vec3(
 		SDF(LocalP.x, Local.y, Local.z) - SDF(LocalM.x, Local.y, Local.z),
 		SDF(Local.x, LocalP.y, Local.z) - SDF(Local.x, LocalM.y, Local.z),
@@ -43,7 +44,7 @@ vec3 WorldNormal(vec3 Point)
 
 
 #elif USE_NORMALMETHOD == NORMALMETHOD_DERIVATIVE
-vec3 WorldNormal(vec3 Point)
+vec3 WorldNormal(ObjectInfo Object, vec3 Point)
 {
 	return normalize(cross(dFdx(Point), dFdy(Point)));
 }

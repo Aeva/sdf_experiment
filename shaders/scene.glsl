@@ -1,7 +1,10 @@
+prepend: shaders/shapes.glsl
 --------------------------------------------------------------------------------
 
-float SceneHull(vec3 Local)
+float SceneHull(vec4 ShapeParams, vec3 Local)
 {
+	vec3 ShapeBounds = ShapeParams.xyz;
+	int ShapeFn = int(ShapeParams.w);
 	if (ShapeFn == SHAPE_ORIGIN)
 	{
 		return FancyBoxHull(Local, ShapeBounds);
@@ -31,8 +34,10 @@ float SceneHull(vec3 Local)
 }
 
 
-ColorSDF SceneColor(vec3 Local)
+ColorSDF SceneColor(vec4 ShapeParams, vec3 Local)
 {
+	vec3 ShapeBounds = ShapeParams.xyz;
+	int ShapeFn = int(ShapeParams.w);
 	if (ShapeFn == SHAPE_ORIGIN)
 	{
 		return FancyBoxColor(Local, ShapeBounds);

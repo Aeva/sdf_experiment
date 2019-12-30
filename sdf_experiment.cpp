@@ -9,10 +9,15 @@
 
 using namespace glm;
 
-ShaderPipeline SplatShader;
+ShaderPipeline DepthShader;
+ShaderPipeline ColorShader;
 Buffer ScreenInfo;
 Buffer ViewInfo;
 Buffer AllObjects;
+
+GLuint DepthPass;
+GLuint DepthBuffer;
+GLuint ObjectIdBuffer;
 
 
 struct ShapeInfo
@@ -181,21 +186,54 @@ StatusCode ReadMapData()
 }
 
 
+void AllocateRenderTargets(bool bErase=false)
+{
+	float ScreenWidth;
+	float ScreenHeight;
+	GetScreenSize(&ScreenWidth, &ScreenHeight);
+	if (bErase)
+	{
+		glDeleteFramebuffers(1, &DepthPass);
+		glDeleteTextures(1, &DepthBuffer);
+		glDeleteTextures(1, &ObjectIdBuffer);
+	}
+	glCreateTextures(GL_TEXTURE_2D, 1, &DepthBuffer);
+	glTextureStorage2D(DepthBuffer, 1, GL_DEPTH_COMPONENT32F, int(ScreenWidth), int(ScreenHeight));
+	glTextureParameteri(DepthBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(DepthBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTextureParameteri(DepthBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(DepthBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glCreateTextures(GL_TEXTURE_2D, 1, &ObjectIdBuffer);
+	glTextureStorage2D(ObjectIdBuffer, 1, GL_R32I, int(ScreenWidth), int(ScreenHeight));
+	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glCreateFramebuffers(1, &DepthPass);
+	glNamedFramebufferTexture(DepthPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
+	glNamedFramebufferTexture(DepthPass, GL_COLOR_ATTACHMENT0, ObjectIdBuffer, 0);
+}
+
+
 StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 {
-	RETURN_ON_FAIL(SplatShader.Setup(
-		{ {GL_VERTEX_SHADER, "shaders/splat.vs.glsl"},
-		 {GL_FRAGMENT_SHADER, "shaders/splat.fs.glsl"} }));
+	RETURN_ON_FAIL(DepthShader.Setup(
+		{ {GL_VERTEX_SHADER, "shaders/depth.vs.glsl"},
+		 {GL_FRAGMENT_SHADER, "shaders/depth.fs.glsl"} }));
+
+	RETURN_ON_FAIL(ColorShader.Setup(
+		{ {GL_VERTEX_SHADER, "shaders/color.vs.glsl"},
+		 {GL_FRAGMENT_SHADER, "shaders/color.fs.glsl"} }));
 
 	// cheese opengl into letting us draw triangles without any data
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_GREATER);
 	glClearDepth(0.0);
-	glClearColor(0.729, 0.861, 0.951, 1.0);
 	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 	glDepthRange(1.0, 0.0);
 
@@ -204,6 +242,8 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 	glGenQueries(1, &FrameEndTime);
 	glGenQueries(1, &DrawTime);
 #endif
+
+	AllocateRenderTargets();
 
 	Objects.reserve(ObjectsCount);
 	Objects.push_back(ShapeInfo(SHAPE_ORIGIN, vec3(1.0), TRAN(0.0, 0.0, 0.0)));
@@ -290,7 +330,7 @@ StatusCode SDFExperiment::Setup(GLFWwindow* Window)
 
 void SDFExperiment::WindowIsDirty()
 {
-
+	AllocateRenderTargets(true);
 }
 
 
@@ -299,7 +339,7 @@ void SDFExperiment::Render()
 #if PROFILING
 	glQueryCounter(FrameStartTime, GL_TIMESTAMP);
 #endif
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	double Time = glfwGetTime();
 	UpdateScreenInfo();
 
@@ -352,7 +392,12 @@ void SDFExperiment::Render()
 		ViewInfo.Upload((void*)&BufferData, sizeof(BufferData));
 	}
 
-	SplatShader.Activate();
+	glEnable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_FRAMEBUFFER, DepthPass);
+	glBindTextureUnit(1, 0);
+	glBindTextureUnit(2, 0);
+	DepthShader.Activate();
+	glClear(GL_DEPTH_BUFFER_BIT);
 	ScreenInfo.Bind(GL_UNIFORM_BUFFER, 1);
 	ViewInfo.Bind(GL_UNIFORM_BUFFER, 2);
 
@@ -428,6 +473,14 @@ void SDFExperiment::Render()
 		glEndQuery(GL_TIME_ELAPSED);
 #endif
 	}
+
+	glDisable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTextureUnit(1, DepthBuffer);
+	glBindTextureUnit(2, ObjectIdBuffer);
+	ColorShader.Activate();
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
 
 #if PROFILING
 	glQueryCounter(FrameEndTime, GL_TIMESTAMP);

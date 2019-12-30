@@ -1,4 +1,5 @@
 prepend: shaders/screen.glsl
+prepend: shaders/objects.glsl
 --------------------------------------------------------------------------------
 
 out gl_PerVertex
@@ -9,21 +10,8 @@ out gl_PerVertex
 };
 
 
-out flat mat4 LocalToWorld;
-out flat mat4 WorldToLocal;
-out flat vec2 DepthRange;
-out flat vec3 ShapeBounds;
-out flat int ShapeFn;
-
-
-struct ObjectInfo
-{
-	vec4 ClipBounds; // (MinX, MinY, MaxX, MaxY)
-	vec4 DepthRange; // (Min, Max, 0.0, 0.0)
-	vec4 ShapeParams; // (AABB Extent, ShapeFn)
-	mat4 LocalToWorld;
-	mat4 WorldToLocal;
-};
+out flat ObjectInfo Object;
+out flat int ObjectId;
 
 
 layout(std430, binding = 0) readonly buffer ObjectsBlock
@@ -43,18 +31,14 @@ void main()
 0, 1
 1, 0
 */
-	LocalToWorld = Objects[gl_InstanceID].LocalToWorld;
-	WorldToLocal = Objects[gl_InstanceID].WorldToLocal;
-	DepthRange = Objects[gl_InstanceID].DepthRange.xy;
-	ShapeBounds = Objects[gl_InstanceID].ShapeParams.xyz;
-	ShapeFn = int(Objects[gl_InstanceID].ShapeParams.w);
-	vec4 ClipBounds = Objects[gl_InstanceID].ClipBounds;
-
+	Object = Objects[gl_InstanceID];
+	ObjectId = gl_InstanceID;
+	
 	// (-1.0, -1.0) is the upper-left corner of the screen.
 	vec2 Alpha = vec2(float(((gl_VertexID % 3) & 1) << 2), float(((gl_VertexID % 3) & 2) << 1)) * 0.25;
 	if (gl_VertexID > 2)
 	{
 		Alpha = 1.0 - Alpha;
 	}
-	gl_Position = vec4(mix(ClipBounds.xy, ClipBounds.zw, Alpha), 0.0, 1.0);
+	gl_Position = vec4(mix(Object.ClipBounds.xy, Object.ClipBounds.zw, Alpha), 0.0, 1.0);
 }
