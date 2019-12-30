@@ -373,23 +373,28 @@ void SDFExperiment::Render()
 			vec4( Bounds.x, -Bounds.y,  Bounds.z, 1.0),
 			vec4( Bounds.x,  Bounds.y,  Bounds.z, 1.0)
 		};
+		float MinViewZ;
+		float MaxViewZ;
 		float MinDist;
 		float MaxDist;
 		vec2 MinClip;
 		vec2 MaxClip;
 		mat4 LocalToClip = ViewToClip * WorldToView * Objects[i].LocalToWorld;
+		mat4 LocalToView = WorldToView * Objects[i].LocalToWorld;
 		for (int c = 0; c < 8; ++c)
 		{
-			vec4 WorldCorner = Objects[i].LocalToWorld * LocalCorners[c];
+			vec4 ViewCorner = LocalToView * LocalCorners[c];
 			vec4 ClipCorner = LocalToClip * LocalCorners[c];
 			vec2 Clipped = vec2(ClipCorner.xy) / ClipCorner.w;
-			float Dist = distance(vec3(WorldCorner.xyz), CameraOrigin);
+			float Dist = length(vec3(ViewCorner.xyz));
 			if (c == 0)
 			{
 				MinDist = Dist;
 				MaxDist = Dist;
 				MinClip = Clipped;
 				MaxClip = Clipped;
+				MinViewZ = ViewCorner.z;
+				MaxViewZ = ViewCorner.z;
 			}
 			else
 			{
@@ -397,9 +402,11 @@ void SDFExperiment::Render()
 				MaxDist = max(MaxDist, Dist);
 				MinClip = min(MinClip, Clipped);
 				MaxClip = max(MaxClip, Clipped);
+				MinViewZ = max(MinViewZ, ViewCorner.z);
+				MaxViewZ = max(MaxViewZ, ViewCorner.z);
 			}
 		}
-		if (MinDist >= 1.0 && MinClip.x <= 1.0 && MinClip.y <= 1.0 && MaxClip.x >= -1.0 && MaxClip.y >= -1.0)
+		if (MinDist >= 1.0 && MinClip.x <= 1.0 && MinClip.y <= 1.0 && MaxClip.x >= -1.0 && MaxClip.y >= -1.0 && MaxViewZ < 0.0)
 		{
 			VisibleObjects.emplace_back(Objects[i], vec4(MinClip, MaxClip), vec2(MinDist, MaxDist));
 		}
@@ -407,10 +414,6 @@ void SDFExperiment::Render()
 
 	// Upload the information for all visible objects.
 	const int VisibleObjectsCount = VisibleObjects.size();
-	if (VisibleObjectsCount < ObjectsCount)
-	{
-		VisibleObjects.resize(ObjectsCount);
-	}
 	AllObjects.Upload((void*)VisibleObjects.data(), sizeof(ShapeUploadInfo) * ObjectsCount);
 	AllObjects.Bind(GL_SHADER_STORAGE_BUFFER, 0);
 
