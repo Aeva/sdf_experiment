@@ -19,6 +19,10 @@ GLuint DepthPass;
 GLuint DepthBuffer;
 GLuint ObjectIdBuffer;
 
+#if ENABLE_RESOLUTION_SCALING
+const float ResolutionScale = 0.5;
+#endif //ENABLE_RESOLUTION_SCALING
+
 
 struct ShapeInfo
 {
@@ -110,11 +114,18 @@ GLint GetQueryValue(GLuint Id, GLenum Param)
 #endif
 
 
-void UpdateScreenInfo()
+void UpdateScreenInfo(bool bResolutionScaling)
 {
 	float ScreenWidth;
 	float ScreenHeight;
 	GetScreenSize(&ScreenWidth, &ScreenHeight);
+#if ENABLE_RESOLUTION_SCALING
+	if (bResolutionScaling)
+	{
+		ScreenWidth = ceil(ScreenWidth * ResolutionScale);
+		ScreenHeight = ceil(ScreenHeight * ResolutionScale);
+	}
+#endif //ENABLE_RESOLUTION_SCALING
 	float ScaleX;
 	float ScaleY;
 	GetDPIScale(&ScaleX, &ScaleY);
@@ -191,12 +202,18 @@ void AllocateRenderTargets(bool bErase=false)
 	float ScreenWidth;
 	float ScreenHeight;
 	GetScreenSize(&ScreenWidth, &ScreenHeight);
+#if ENABLE_RESOLUTION_SCALING
+	ScreenWidth = ceil(ScreenWidth * ResolutionScale);
+	ScreenHeight = ceil(ScreenHeight * ResolutionScale);
+#endif //ENABLE_RESOLUTION_SCALING
+
 	if (bErase)
 	{
 		glDeleteFramebuffers(1, &DepthPass);
 		glDeleteTextures(1, &DepthBuffer);
 		glDeleteTextures(1, &ObjectIdBuffer);
 	}
+
 	glCreateTextures(GL_TEXTURE_2D, 1, &DepthBuffer);
 	glTextureStorage2D(DepthBuffer, 1, GL_DEPTH_COMPONENT32F, int(ScreenWidth), int(ScreenHeight));
 	glTextureParameteri(DepthBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -341,7 +358,6 @@ void SDFExperiment::Render()
 #endif
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	double Time = glfwGetTime();
-	UpdateScreenInfo();
 
 #if ENABLE_HOVERING_SHAPES
 	{
@@ -400,6 +416,7 @@ void SDFExperiment::Render()
 	glClear(GL_DEPTH_BUFFER_BIT);
 	ScreenInfo.Bind(GL_UNIFORM_BUFFER, 1);
 	ViewInfo.Bind(GL_UNIFORM_BUFFER, 2);
+	UpdateScreenInfo(true);
 
 	// Update the information for all objects.
 	std::vector<ShapeUploadInfo> VisibleObjects;
@@ -479,6 +496,13 @@ void SDFExperiment::Render()
 	glBindTextureUnit(1, DepthBuffer);
 	glBindTextureUnit(2, ObjectIdBuffer);
 	ColorShader.Activate();
+#if ENABLE_RESOLUTION_SCALING
+	if (ResolutionScale < 1.0)
+	{
+		UpdateScreenInfo(false);
+	}
+#endif //ENABLE_RESOLUTION_SCALING
+
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
