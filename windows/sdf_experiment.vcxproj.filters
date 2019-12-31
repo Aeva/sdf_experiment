@@ -87,5 +87,11 @@
     <None Include="..\shaders\objects.glsl">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\shaders\text.fs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\text.vs.glsl">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

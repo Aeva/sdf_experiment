@@ -161,6 +161,8 @@
     <None Include="..\shaders\scene.glsl" />
     <None Include="..\shaders\screen.glsl" />
     <None Include="..\shaders\shapes.glsl" />
+    <None Include="..\shaders\text.fs.glsl" />
+    <None Include="..\shaders\text.vs.glsl" />
     <None Include="..\shaders\view.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

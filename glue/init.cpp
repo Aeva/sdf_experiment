@@ -158,9 +158,13 @@ StatusCode SetupGLFW()
 StatusCode DemoSetup ()
 {
 	glUseProgram(0);
-	RETURN_ON_FAIL(SDFExperiment::Setup(Window));
+	RETURN_ON_FAIL(SDFExperiment::Setup());
+#if PROFILING
+	RETURN_ON_FAIL(TextRendering::Setup());
+#endif //PROFILING
 	return StatusCode::PASS;
 }
+
 
 void DrawFrame()
 {
@@ -177,7 +181,6 @@ void DrawFrame()
 		FPS[FrameCounter % StatSamples] = 1.0 / (Now - LastTime);
 		LastTime = Now;
 	}
-	Log::GetStream() << "\n\n";
 #endif
 
 	if (WindowIsDirty)
@@ -192,6 +195,7 @@ void DrawFrame()
 #endif
 		SDFExperiment::Render(FrameCounter);
 #if PROFILING
+		TextRendering::Render(FrameCounter);
 		RenderTimeMS[FrameCounter % StatSamples] = (glfwGetTime() - Start) * 1000.0;
 	}
 	{

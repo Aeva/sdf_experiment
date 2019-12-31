@@ -1,4 +1,12 @@
+#include "errors.h"
 #include<sstream>
+
+
+namespace TextRendering
+{
+	StatusCode Setup();
+	void Render(const int FrameCounter);
+}
 
 
 namespace Log

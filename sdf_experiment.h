@@ -7,7 +7,7 @@
 
 namespace SDFExperiment
 {
-	StatusCode Setup(GLFWwindow* Window);
+	StatusCode Setup();
 	void WindowIsDirty();
 	void Render(const int FrameCounter);
 }

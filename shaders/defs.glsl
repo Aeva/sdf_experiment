@@ -53,6 +53,8 @@
 #define ENABLE_RESOLUTION_SCALING 0
 #define VISUALIZE_ALIASING_GRADIENT 0
 
+#define ENABLE_TEXT_OVERLAY 1
+
 // ----------------
 // COMMON CONSTANTS
 // ----------------

@@ -239,7 +239,7 @@ void AllocateRenderTargets(bool bErase=false)
 }
 
 
-StatusCode SDFExperiment::Setup(GLFWwindow* Window)
+StatusCode SDFExperiment::Setup()
 {
 	RETURN_ON_FAIL(DepthShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/depth.vs.glsl"},
@@ -512,7 +512,7 @@ void SDFExperiment::Render(const int FrameCounter)
 #if PROFILING
 	glBeginQuery(GL_TIME_ELAPSED, ColorPassTime);
 #endif
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 #if PROFILING
 	glEndQuery(GL_TIME_ELAPSED);
 #endif
@@ -542,7 +542,7 @@ void SDFExperiment::Render(const int FrameCounter)
 		}
 		const double AverageTotalDrawTimeNs = AverageDepthPassTimeNs + AverageColorPassTimeNs;
 		Log::GetStream() \
-			<< "Objects Drawn: " << VisibleObjectsCount << " / " << Objects.size() << "\n"
+			<< "Objects Drawn: " << VisibleObjectsCount << " / " << Objects.size() << "\n\n"
 			<< "Average GPU Times:\n"
 			<< " - Depth: " << (AverageDepthPassTimeNs * 1e-6) << " ms\n"
 			<< " - Color: " << (AverageColorPassTimeNs * 1e-6) << " ms\n"
