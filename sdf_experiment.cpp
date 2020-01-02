@@ -335,7 +335,7 @@ StatusCode SDFExperiment::Setup()
 
 			const int PaintFn = bIsRiver ? SHAPE_WATER_CUBE_1 + int(bToggle) : SHAPE_GRASS_CUBE_1 + int(bToggle);
 			
-			Objects.push_back(ShapeInfo(PaintFn, vec3(1.0, 1.0, 1.0), TRAN(WorldX, WorldY, WorldZ)));
+			Objects.push_back(ShapeInfo(PaintFn, vec3(0.5, 0.5, 1.0), TRAN(WorldX, WorldY, WorldZ)));
 			bToggle = !bToggle;
 		}
 		bToggle = !bToggle;
