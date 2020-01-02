@@ -22,50 +22,18 @@ bool CubeTrace(ObjectInfo Object, RayData Ray, out vec3 Position)
 	const vec3 LocalRayDir = Ray.LocalDir;
 	const vec3 LocalRayStart = Ray.LocalStart;
 	const vec3 ShapeBounds = Object.ShapeParams.xyz;
-
-	float SDF = sdBox(LocalRayStart, ShapeBounds);
-	if (IS_SOLID(SDF))
+	const bvec3 bOutsideBounds = greaterThan(abs(LocalRayStart), ShapeBounds);
+	if (!any(bOutsideBounds))
 	{
 		Position = WorldRayStart;
 		return true;
 	}
-
-	const vec3 Fnord1 = (-ShapeBounds - LocalRayStart) / LocalRayDir;
-	const vec3 Fnord2 = (ShapeBounds - LocalRayStart) / LocalRayDir;
-	float RayDists[6] = \
-	{
-		Fnord1.x,
-		Fnord1.y,
-		Fnord1.z,
-		Fnord2.x,
-		Fnord2.y,
-		Fnord2.z
-	};
-
-	for (int t = 0; t < 5; ++t)
-	{
-		for (int i = 0; i < 5; ++i)
-		{
-			const float a = RayDists[i];
-			const float b = RayDists[i+1];
-			RayDists[i] = min(a, b);
-			RayDists[i+1] = max(a, b);
-		}
-	}
-
-	for (int i = 0; i < 3; ++i)
-	{
-		const vec3 LocalPosition = RayDists[i] * LocalRayDir + LocalRayStart;
-		SDF = sdBox(LocalPosition, ShapeBounds);
-		if (IS_SOLID(SDF))
-		{
-			Position = RayDists[i] * WorldRayDir + WorldRayStart;
-			return true;
-		}
-	}
-
-	Position = vec3(0.0);
-	return false;
+	const vec3 Planes = sign(LocalRayStart) * ShapeBounds;
+	const vec3 PlaneDistances = mix(vec3(-1.0), (Planes - LocalRayStart) / LocalRayDir, bOutsideBounds);
+	const float MaxTravel = max(max(PlaneDistances.x, PlaneDistances.y), PlaneDistances.z);
+	const vec3 LocalPosition = LocalRayDir * MaxTravel + LocalRayStart;
+	Position = WorldRayDir * MaxTravel + WorldRayStart;
+	return MaxTravel > 0.0 && all(lessThanEqual(abs(LocalPosition), ShapeBounds + AlmostZero));
 }
 #endif // ENABLE_CUBETRACE
 
