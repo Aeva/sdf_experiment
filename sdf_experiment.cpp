@@ -280,6 +280,7 @@ StatusCode SDFExperiment::Setup()
 	const vec2 RiverCenter = vec2(7.5, 7.5);
 	const double TileSize = 1.0;
 	bool bIsOdd = false;
+	srand(1);
 	for (double y = 0; y < FloorHeight; y += TileSize)
 	{
 		for (double x = 0; x < FloorWidth; x += TileSize)
