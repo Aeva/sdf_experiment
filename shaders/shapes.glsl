@@ -324,11 +324,11 @@ float FancyBoxHull(vec3 Point, vec3 Bounds)
 }
 
 
-#define USE_TWIST 0
+#define USE_TWIST 1
 ColorSDF TangerineColor(vec3 Local)
 {
 #if USE_TWIST
-	Local = Twist(Local, length(Local.xy) * 5.0);
+	//Local = Twist(Local, length(Local.xy) * 5.0);
 #endif // USE_TWIST
 	return SphubeColor(Local, 0.5, PAINT_TANGERINE);
 }
@@ -345,7 +345,7 @@ float TangerineHull(vec3 Local)
 #endif // ENABLE_HOVERING_SHAPES
 	const float Repeat = 0.5;
 	BoxLocal.z = mod(BoxLocal.z + 0.5 * Repeat, Repeat) - 0.5 * Repeat;
-	Local = Twist(Local, length(Local.xy) * 5.0);
+	//Local = Twist(Local, length(Local.xy) * 5.0);
 	return opSubtraction(SphubeHull(Local, 0.5, PAINT_TANGERINE), sdBox(BoxLocal, vec3(2.0, 2.0, Repeat * 0.3)));
 	//return opSubtraction(opIntersection(SphubeHull(Local, 0.5, PAINT_TANGERINE), sdGloop(Local, 10.0)), sdBox(BoxLocal, vec3(2.0, 2.0, Repeat * 0.3)));
 #else
@@ -429,20 +429,61 @@ float OnionHull(vec3 Point)
 }
 
 
-ColorSDF TreeColor(vec3 Local)
-{
-	const float TreeHeight = 10.0;
-	const float FoliageOffset = 2.0;
-	const float FoliageHeight = max(TreeHeight - FoliageOffset, 0.0);
-	const vec3 FoliageLocal = Local - vec3(0.0, 0.0, FoliageOffset);
+const float TreeHeight = 10.0;
 
-	ColorSDF Shape = Cylinder(Local, 0.5, TreeHeight, PAINT_TREE_TRUNK);
-	Shape = Union(Shape, Cylinder(FoliageLocal, 2.0, FoliageHeight, PAINT_TREE_LEAVES));
-	return Shape;
+const float FoliageOffset = 2.0;
+const float FoliageHeight = TreeHeight - FoliageOffset;
+const float FoliageRadius = 2.0;
+const float FoliageSlope = -FoliageHeight / FoliageRadius;
+const float FoliageRatio = sqrt(1.0/(FoliageSlope * FoliageSlope + 1.0));
+const vec3 FoliageTranslate = vec3(0.0, 0.0, -TreeHeight * 0.5 + FoliageOffset);
+const vec3 FoliageExtent = vec3(FoliageRadius, FoliageRadius, FoliageHeight) * 0.5;
+
+const float TrunkHalfHeight = FoliageOffset * 0.5;
+const float TrunkRadius = 0.5;
+const vec3 TrunkTranslate = vec3(0.0, 0.0, -TreeHeight * 0.5 + TrunkHalfHeight);
+const vec3 TrunkExtent = vec3(TrunkRadius, TrunkRadius, TrunkHalfHeight);
+
+
+float FoliageHull(const vec3 Local)
+{
+	const vec2 Test = vec2(abs(length(Local.xy)), Local.z - FoliageTranslate.z);
+	const float Vertical = (FoliageSlope * Test.x + FoliageHeight - Test.y);
+    const float Perpendicular = Vertical * FoliageRatio;
+    return -min(Perpendicular, Test.y);
 }
 
 
-float TreeHull(vec3 Local)
+ColorSDF FoliageColor(const vec3 Local)
 {
-	return TreeColor(Local).Distance;
+	const float Distance = FoliageHull(Local);
+	return ColorSDF(Distance, Distance, PAINT_TREE_LEAVES, Local - FoliageTranslate, FoliageExtent);
+}
+
+
+float TreeTrunkHull(const vec3 Local)
+{
+    const float CylinderPart = sdCylinder(Local-TrunkTranslate, TrunkRadius);
+    const float BoxPart = sdBox(Local-TrunkTranslate, TrunkExtent);
+    return opIntersection(CylinderPart, BoxPart);
+}
+
+
+ColorSDF TreeTrunkColor(const vec3 Local)
+{
+    const float Distance = TreeTrunkHull(Local);
+	return ColorSDF(Distance, Distance, PAINT_TREE_TRUNK, Local - TrunkTranslate, TrunkExtent);
+}
+
+
+float TreeHull(const vec3 Local)
+{
+	return opUnion(FoliageHull(Local), TreeTrunkHull(Local));
+	return FoliageHull(Local);
+}
+
+
+ColorSDF TreeColor(vec3 Local)
+{
+	return Union(FoliageColor(Local), TreeTrunkColor(Local));
 }

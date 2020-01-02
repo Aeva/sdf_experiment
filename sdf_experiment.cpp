@@ -310,10 +310,10 @@ StatusCode SDFExperiment::Setup()
 			const double RandB = (double(rand() % 1000) / 1000.0) * -100.0;
 			WorldPos = vec2(RandA, RandB);
 		}
-		const double TreeHeight = 10.0;
-		const double ExtentZ = TreeHeight * 0.5;
-		const double OffsetZ = ExtentZ - 2.0;
-		Objects.push_back(ShapeInfo(SHAPE_TREE, vec3(2.0, 2.0, 4.0), TRAN(WorldPos.x, WorldPos.y, OffsetZ)));
+		const float TreeRadius = 2.0;
+		const float TreeHalfHeight = 5.0;
+		const vec3 TreeExtent = vec3(TreeRadius, TreeRadius, TreeHalfHeight);
+		Objects.push_back(ShapeInfo(SHAPE_TREE, TreeExtent, TRAN(WorldPos.x, WorldPos.y, TreeHalfHeight - 1.5)));
 	}
 
 #elif USE_SCENE == SCENE_HEIGHTMAP
