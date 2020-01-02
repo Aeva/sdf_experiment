@@ -35,20 +35,8 @@ void main()
 	const vec3 LocalRayStart = Transform3(Object.WorldToLocal, WorldRayStart);
 	const vec3 LocalRayDir = normalize(Transform3(Object.WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
 	const RayData Ray = RayData(WorldRayDir, WorldRayStart, LocalRayDir, LocalRayStart);
-
 	vec3 Position;
-	bool bFound;
-#if ENABLE_CUBETRACE
-	if (Object.ShapeParams.w > CUBE_TRACEABLES)
-	{
-		bFound = CubeTrace(Object, Ray, Position);
-	}
-	else
-#endif
-	{
-		bFound = RayMarch(Object, Ray, Position);
-	}
-	if (bFound)
+	if (RayMarch(Object, Ray, Position))
 	{
 		OutObjectId = ObjectId;
 		gl_FragDepth = 1.0 / distance(Position, CameraOrigin.xyz);

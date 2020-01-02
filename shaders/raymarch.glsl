@@ -15,34 +15,29 @@ struct RayData
 
 
 #if ENABLE_CUBETRACE
-bool CubeTrace(ObjectInfo Object, RayData Ray, out vec3 Position)
+float CubeTrace(const vec3 ShapeBounds, const RayData Ray)
 {
-	const vec3 WorldRayDir = Ray.WorldDir;
-	const vec3 WorldRayStart = Ray.WorldStart;
-	const vec3 LocalRayDir = Ray.LocalDir;
-	const vec3 LocalRayStart = Ray.LocalStart;
-	const vec3 ShapeBounds = Object.ShapeParams.xyz;
-	const bvec3 bOutsideBounds = greaterThan(abs(LocalRayStart), ShapeBounds);
+	const bvec3 bOutsideBounds = greaterThan(abs(Ray.LocalStart), ShapeBounds);
 	if (!any(bOutsideBounds))
 	{
-		Position = WorldRayStart;
-		return true;
+		return 0.0;
 	}
-	const vec3 Planes = sign(LocalRayStart) * ShapeBounds;
-	const vec3 PlaneDistances = mix(vec3(-1.0), (Planes - LocalRayStart) / LocalRayDir, bOutsideBounds);
+	const vec3 Planes = sign(Ray.LocalStart) * ShapeBounds;
+	const vec3 PlaneDistances = mix(vec3(-1.0), (Planes - Ray.LocalStart) / Ray.LocalDir, bOutsideBounds);
 	const float MaxTravel = max(max(PlaneDistances.x, PlaneDistances.y), PlaneDistances.z);
-	const vec3 LocalPosition = LocalRayDir * MaxTravel + LocalRayStart;
-	Position = WorldRayDir * MaxTravel + WorldRayStart;
-	return MaxTravel > 0.0 && all(lessThanEqual(abs(LocalPosition), ShapeBounds + AlmostZero));
+	const vec3 LocalPosition = Ray.LocalDir * MaxTravel + Ray.LocalStart;
+	if (MaxTravel >= 0.0 && all(lessThanEqual(abs(LocalPosition), ShapeBounds + AlmostZero)))
+	{
+		return MaxTravel;
+	}
+	return -1.0;
 }
 #endif // ENABLE_CUBETRACE
 
 
 #if USE_RAYMETHOD == RAYMETHOD_BASIC
-bool RayMarch(ObjectInfo Object, const RayData Ray, out vec3 Position)
+bool RayMarchInner(ObjectInfo Object, const RayData Ray, out vec3 Position)
 {
-	const vec3 WorldRayDir = Ray.WorldDir;
-	const vec3 WorldRayStart = Ray.WorldStart;
 	const vec3 LocalRayDir = Ray.LocalDir;
 	const vec3 LocalCameraOrigin = Transform3(Object.WorldToLocal, CameraOrigin.xyz);
 	vec3 LocalPosition = Ray.LocalStart;
@@ -57,92 +52,13 @@ bool RayMarch(ObjectInfo Object, const RayData Ray, out vec3 Position)
         }
 		else
 		{
-			LocalPosition += LocalRayDir * SDF;
+			LocalPosition += Ray.LocalDir * SDF;
 			if (distance(LocalPosition, LocalCameraOrigin) > Object.DepthRange.y)
 			{
 				break;
 			}
 		}
     }
-
-	Position = vec3(0.0);
-	return false;
-}
-
-
-#elif USE_RAYMETHOD == RAYMETHOD_CUBE_ELIMINATE
-bool RayMarch(ObjectInfo Object, const RayData Ray, out vec3 Position)
-{
-	const vec3 WorldRayDir = Ray.WorldDir;
-	const vec3 WorldRayStart = Ray.WorldStart;
-	const vec3 LocalRayDir = Ray.LocalDir;
-	const vec3 LocalRayStart = Ray.LocalStart;
-	const vec3 ShapeBounds = Object.ShapeParams.xyz;
-
-	float SDF = sdBox(LocalRayStart, ShapeBounds);
-	if (IS_SOLID(SDF))
-	{
-		Position = WorldRayStart;
-		return true;
-	}
-
-	const vec3 Fnord1 = (-ShapeBounds - LocalRayStart) / LocalRayDir;
-	const vec3 Fnord2 = (ShapeBounds - LocalRayStart) / LocalRayDir;
-	float RayDists[6] = \
-	{
-		Fnord1.x,
-		Fnord1.y,
-		Fnord1.z,
-		Fnord2.x,
-		Fnord2.y,
-		Fnord2.z
-	};
-
-	for (int t = 0; t < 5; ++t)
-	{
-		for (int i = 0; i < 5; ++i)
-		{
-			const float a = RayDists[i];
-			const float b = RayDists[i+1];
-			RayDists[i] = min(a, b);
-			RayDists[i+1] = max(a, b);
-		}
-	}
-
-	bool bFound = false;
-	float RayDistance;
-	for (int i = 0; i < 3; ++i)
-	{
-		vec3 LocalPosition = RayDists[i] * LocalRayDir + LocalRayStart;
-		if (IS_SOLID(sdBox(LocalPosition, ShapeBounds)))
-		{
-			RayDistance = RayDists[i];
-			bFound = true;
-			break;
-		}
-	}
-	if (bFound)
-	{
-		const float EndRayDist = RayDists[5];
-		for (int Step = 0; Step <= MaxIterations; ++Step)
-	    {
-			const vec3 LocalPosition = RayDistance * LocalRayDir + LocalRayStart;
-			const float SDF = SceneHull(Object.ShapeParams, LocalPosition);
-			if (IS_SOLID(SDF))
-		    {
-				Position = Transform3(Object.LocalToWorld, LocalPosition);
-				return true;
-			}
-			else
-			{
-				RayDistance += SDF;
-				if (RayDistance > EndRayDist)
-				{
-					break;
-				}
-			}
-		}
-	}
 
 	Position = vec3(0.0);
 	return false;
@@ -159,21 +75,15 @@ struct Coverage
 };
 
 
-bool RayMarch(ObjectInfo Object, const RayData Ray, out vec3 Position)
+bool RayMarchInner(ObjectInfo Object, const RayData Ray, out vec3 Position)
 {
-	const vec3 WorldRayDir = Ray.WorldDir;
-	const vec3 WorldRayStart = Ray.WorldStart;
-	const vec3 LocalRayDir = Ray.LocalDir;
-	const vec3 LocalRayStart = Ray.LocalStart;
-	const vec3 ShapeBounds = Object.ShapeParams.xyz;
-
-#define POS_AT_T(T) (T * LocalRayDir + LocalRayStart)
+#define POS_AT_T(T) (T * Ray.LocalDir + Ray.LocalStart)
 #define SDF_AT_T(T) SceneHull(Object.ShapeParams, POS_AT_T(T))
 #define SPAN(T, SD) T-abs(SD), T+abs(SD), (IS_SOLID(SD) ? -1 : 1)
 
 	// TODO: I don't think this is correct.
-	const float RayToCenter = length(LocalRayStart);
-	const float ShapeRadius = length(ShapeBounds);
+	const float RayToCenter = length(Ray.LocalStart);
+	const float ShapeRadius = length(Object.ShapeParams.xyz);
 	const float StartT = RayToCenter - ShapeRadius;
 	const float EndT = RayToCenter + ShapeRadius;
 
@@ -238,6 +148,32 @@ bool RayMarch(ObjectInfo Object, const RayData Ray, out vec3 Position)
 #undef SDF_AT_T
 #undef POS_AT_T
 }
-
-
 #endif // USE_RAYMETHOD
+
+
+#if ENABLE_CUBETRACE
+bool RayMarch(ObjectInfo Object, RayData Ray, out vec3 Position)
+{
+	float Distance = CubeTrace(Object.ShapeParams.xyz, Ray);
+	if (Distance >= 0.0)
+	{
+		if (Object.ShapeParams.w > CUBE_TRACEABLES)
+		{
+			Position = Ray.WorldDir * Distance + Ray.WorldStart;
+			return true;
+		}
+		else
+		{
+			Ray.LocalStart += Ray.LocalDir * Distance;
+			return RayMarchInner(Object, Ray, Position);
+		}
+	}
+	else
+	{
+		Position = vec3(0.0);
+		return false;
+	}
+}
+#else
+#define RayMarch RayMarchInner
+#endif //ENABLE_CUBETRACE
