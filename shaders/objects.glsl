@@ -8,3 +8,11 @@ struct ObjectInfo
 	mat4 LocalToWorld;
 	mat4 WorldToLocal;
 };
+
+
+#if ENABLE_SUN_SHADOWS
+struct ShadowCoverageInfo
+{
+	ivec4 ShadowCasters;
+};
+#endif //ENABLE_SUN_SHADOWS

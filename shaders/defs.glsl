@@ -50,12 +50,16 @@
 #define ENABLE_HOVERING_SHAPES 1
 #define ENABLE_ANTIALIASING 0
 #define ENABLE_RESOLUTION_SCALING 0
-#define VISUALIZE_ALIASING_GRADIENT 0
-
+#define ENABLE_SUN_SHADOWS 1
 #define ENABLE_TEXT_OVERLAY 1
+
+#define VISUALIZE_ALIASING_GRADIENT 0
+#define VISUALIZE_SHADOW_COVERAGE 0
 
 // ----------------
 // COMMON CONSTANTS
 // ----------------
 const int MaxIterations = 100;
 const float AlmostZero = 0.001;
+
+#define SUN_DIR vec3(1.0, 1.0, 3.0)

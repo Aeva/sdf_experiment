@@ -177,3 +177,11 @@ bool RayMarch(ObjectInfo Object, RayData Ray, out vec3 Position)
 #else
 #define RayMarch RayMarchInner
 #endif //ENABLE_CUBETRACE
+
+#if ENABLE_SUN_SHADOWS
+bool RayMarchOcclusionOnly(ObjectInfo Object, RayData Ray)
+{
+	vec3 Position;
+	return RayMarch(Object, Ray, Position);
+}
+#endif //ENABLE_SUN_SHADOWS

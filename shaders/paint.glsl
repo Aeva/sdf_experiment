@@ -47,15 +47,23 @@ vec3 PaintAxis(const ColorSDF Shape)
 }
 
 
-vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal)
+vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal, const bool bShadowed)
 {
+#if ENABLE_SUN_SHADOWS
+	// Sun Light
+	const vec3 LightPosition = normalize(-SUN_DIR);
+	const float CosAngle = dot(LightPosition, WorldNormal) * (1.0 - float(bShadowed));
+	return BaseColor * max(-CosAngle, 0.5);
+#else
+	// Point Light
 	const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
 	const float CosAngle = dot(normalize(Point - LightPosition), WorldNormal);
 	return BaseColor * max(-CosAngle, 0.5);
+#endif
 }
 
 
-vec3 PaintCube(ObjectInfo Object, vec3 WorldPosition)
+vec3 PaintCube(ObjectInfo Object, vec3 WorldPosition, const bool bShadowed)
 {
 	int ShapeFn = int(Object.ShapeParams.w);
 	const vec3 LocalPosition = Transform3(Object.WorldToLocal, WorldPosition);
@@ -82,17 +90,17 @@ vec3 PaintCube(ObjectInfo Object, vec3 WorldPosition)
 	{
 		return vec3(1.0, 0.0, 0.0);
 	}
-	return Illuminate(Color, WorldPosition, WorldNormal);
+	return Illuminate(Color, WorldPosition, WorldNormal, bShadowed);
 }
 
 
-vec3 Paint(ObjectInfo Object, vec3 Point)
+vec3 Paint(ObjectInfo Object, vec3 Point, const bool bShadowed)
 {
 	int ShapeFn = int(Object.ShapeParams.w);
 
 	if (ShapeFn > CUBE_TRACEABLES)
 	{
-		return PaintCube(Object, Point);
+		return PaintCube(Object, Point, bShadowed);
 	}
 	
 	ColorSDF Shape = SceneColor(Object.ShapeParams, Transform3(Object.WorldToLocal, Point));
@@ -147,5 +155,5 @@ vec3 Paint(ObjectInfo Object, vec3 Point)
         return vec3(1.0, 0.0, 0.0);
     }
 
-	return Illuminate(Color, Point, WorldNormal);
+	return Illuminate(Color, Point, WorldNormal, bShadowed);
 }

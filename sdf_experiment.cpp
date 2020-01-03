@@ -18,6 +18,9 @@ ShaderPipeline ColorShader;
 Buffer ScreenInfo;
 Buffer ViewInfo;
 Buffer AllObjects;
+#if ENABLE_SUN_SHADOWS
+Buffer ShadowCoverage;
+#endif //ENABLE_SUN_SHADOWS
 
 GLuint DepthPass;
 GLuint DepthBuffer;
@@ -34,12 +37,14 @@ struct ShapeInfo
 	mat4 WorldToLocal;
 	vec3 AABB;
 	int ShapeFn;
+	bool bShadowCaster;
 
-	ShapeInfo(int InShapeFn, vec3 InAABB, dmat4 InLocalToWorld)
+	ShapeInfo(int InShapeFn, vec3 InAABB, dmat4 InLocalToWorld, bool bInShadowCaster)
 		: LocalToWorld(mat4(InLocalToWorld))
 		, WorldToLocal(mat4(inverse(InLocalToWorld)))
 		, AABB(InAABB)
 		, ShapeFn(InShapeFn)
+		, bShadowCaster(bInShadowCaster)
 	{}
 };
 
@@ -67,7 +72,30 @@ struct ShapeUploadInfo
 		, LocalToWorld(InShape.LocalToWorld)
 		, WorldToLocal(InShape.WorldToLocal)
 	{}
+
+	friend bool operator==(const ShapeUploadInfo& LHS, const ShapeUploadInfo& RHS)
+	{
+		return LHS.ShapeParams == RHS.ShapeParams && LHS.LocalToWorld == RHS.LocalToWorld;
+	}
 };
+
+
+#if ENABLE_SUN_SHADOWS
+const size_t MAX_SHADOW_CASTERS = 4;
+struct ShadowCoverageInfo
+{
+	int ShadowCasters[MAX_SHADOW_CASTERS];
+
+	ShadowCoverageInfo(std::vector<int> Found)
+		: ShadowCasters{ 0 }
+	{
+		for (int i = 0; i < Found.size(); ++i)
+		{
+			ShadowCasters[i] = Found[i];
+		}
+	}
+};
+#endif //ENABLE_SUN_SHADOWS
 
 
 struct ViewInfoUpload
@@ -101,8 +129,6 @@ std::vector<ShapeInfo> Objects;
 ShapeInfo* Tangerine = nullptr;
 ShapeInfo* Lime = nullptr;
 ShapeInfo* Onion = nullptr;
-
-const size_t AllObjectsSize = sizeof(ShapeInfo) * ObjectsCount;
 
 
 #if PROFILING
@@ -227,7 +253,7 @@ void AllocateRenderTargets(bool bErase=false)
 	glTextureParameteri(DepthBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &ObjectIdBuffer);
-	glTextureStorage2D(ObjectIdBuffer, 1, GL_R32I, int(ScreenWidth), int(ScreenHeight));
+	glTextureStorage2D(ObjectIdBuffer, 1, GL_R32F, int(ScreenWidth), int(ScreenHeight));
 	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -269,10 +295,10 @@ StatusCode SDFExperiment::Setup()
 	AllocateRenderTargets();
 
 	Objects.reserve(ObjectsCount);
-	Objects.push_back(ShapeInfo(SHAPE_ORIGIN, vec3(1.0), TRAN(0.0, 0.0, 0.0)));
-	Objects.push_back(ShapeInfo(SHAPE_X_AXIS, vec3(1.0), TRAN(3.0, 0.0, 0.0)));
-	Objects.push_back(ShapeInfo(SHAPE_Y_AXIS, vec3(1.0), TRAN(0.0, 3.0, 0.0)));
-	Objects.push_back(ShapeInfo(SHAPE_Z_AXIS, vec3(1.0), TRAN(0.0, 0.0, 3.0)));
+	Objects.push_back(ShapeInfo(SHAPE_ORIGIN, vec3(1.0), TRAN(0.0, 0.0, 0.0), true));
+	Objects.push_back(ShapeInfo(SHAPE_X_AXIS, vec3(1.0), TRAN(3.0, 0.0, 0.0), true));
+	Objects.push_back(ShapeInfo(SHAPE_Y_AXIS, vec3(1.0), TRAN(0.0, 3.0, 0.0), true));
+	Objects.push_back(ShapeInfo(SHAPE_Z_AXIS, vec3(1.0), TRAN(0.0, 0.0, 3.0), true));
 
 #if USE_SCENE == SCENE_RANDOM_FOREST
 	const double OffsetX = -double(FloorWidth) * 2.0 + 20.5;
@@ -296,7 +322,7 @@ StatusCode SDFExperiment::Setup()
 			const double Offset = bIsRiver ? 0.5 : 0.0;
 
 			const double WorldZ = (double(rand() % 1000) / 1000.0) * Turbulance + Offset;
-			Objects.push_back(ShapeInfo(PaintFn, vec3(TileSize, TileSize, 1.0), TRAN(WorldX, WorldY, -2.0 - WorldZ)));
+			Objects.push_back(ShapeInfo(PaintFn, vec3(TileSize, TileSize, 1.0), TRAN(WorldX, WorldY, -2.0 - WorldZ), false));
 			bIsOdd = !bIsOdd;
 		}
 		bIsOdd = !bIsOdd;
@@ -314,7 +340,7 @@ StatusCode SDFExperiment::Setup()
 		const float TreeRadius = 2.0;
 		const float TreeHalfHeight = 5.0;
 		const vec3 TreeExtent = vec3(TreeRadius, TreeRadius, TreeHalfHeight);
-		Objects.push_back(ShapeInfo(SHAPE_TREE, TreeExtent, TRAN(WorldPos.x, WorldPos.y, TreeHalfHeight - 1.5)));
+		Objects.push_back(ShapeInfo(SHAPE_TREE, TreeExtent, TRAN(WorldPos.x, WorldPos.y, TreeHalfHeight - 1.5), true));
 	}
 
 #elif USE_SCENE == SCENE_HEIGHTMAP
@@ -335,7 +361,7 @@ StatusCode SDFExperiment::Setup()
 
 			const int PaintFn = bIsRiver ? SHAPE_WATER_CUBE_1 + int(bToggle) : SHAPE_GRASS_CUBE_1 + int(bToggle);
 			
-			Objects.push_back(ShapeInfo(PaintFn, vec3(0.5, 0.5, 1.0), TRAN(WorldX, WorldY, WorldZ)));
+			Objects.push_back(ShapeInfo(PaintFn, vec3(0.5, 0.5, 1.0), TRAN(WorldX, WorldY, WorldZ), false));
 			bToggle = !bToggle;
 		}
 		bToggle = !bToggle;
@@ -427,7 +453,9 @@ void SDFExperiment::Render(const int FrameCounter)
 
 	// Update the information for all objects.
 	std::vector<ShapeUploadInfo> VisibleObjects;
+	std::vector<ShapeUploadInfo> ShadowCasters;
 	VisibleObjects.reserve(ObjectsCount);
+	ShadowCasters.reserve(ObjectsCount);
 	for (int i = 0; i < ObjectsCount; ++i)
 	{
 		const vec3 Bounds = Objects[i].AABB;
@@ -479,12 +507,62 @@ void SDFExperiment::Render(const int FrameCounter)
 		{
 			VisibleObjects.emplace_back(Objects[i], vec4(MinClip, MaxClip), vec2(MinDist, MaxDist));
 		}
+		if (Objects[i].bShadowCaster)
+		{
+			ShadowCasters.emplace_back(Objects[i], vec4(MinClip, MaxClip), vec2(MinDist, MaxDist));
+		}
 	}
 
-	// Upload the information for all visible objects.
+	// Upload the information for objects required for rendering.
 	const int VisibleObjectsCount = VisibleObjects.size();
-	AllObjects.Upload((void*)VisibleObjects.data(), sizeof(ShapeUploadInfo) * ObjectsCount);
+	const int ShadowCastersOffset = VisibleObjectsCount;
+	const int ShadowCastersCount = ShadowCasters.size();
+
+	std::vector<ShapeUploadInfo> &UploadObjects = VisibleObjects;
+	for (ShapeUploadInfo& Shape : ShadowCasters)
+	{
+		UploadObjects.push_back(Shape);
+	}
+	AllObjects.Upload((void*)UploadObjects.data(), sizeof(ShapeUploadInfo) * ObjectsCount);
 	AllObjects.Bind(GL_SHADER_STORAGE_BUFFER, 0);
+
+#if ENABLE_SUN_SHADOWS
+	// Sun Occlusion Experiment
+	std::vector<ShadowCoverageInfo> ShadowCoverageData;
+	ShadowCoverageData.reserve(ObjectsCount);
+	const vec3 SunDir = normalize(vec3(SUN_DIR));
+	for (int Vis = 0; Vis < VisibleObjectsCount; ++Vis)
+	{
+		const ShapeUploadInfo& Shape = UploadObjects[Vis];
+		const vec3 ShapeCenter = (Shape.LocalToWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+		const float ShapeRadius = length(vec3(Shape.ShapeParams.xyz));
+
+		std::vector<int> Found;
+		Found.reserve(MAX_SHADOW_CASTERS);
+		for (int Occ = ShadowCastersOffset; Occ < (ShadowCastersOffset + ShadowCastersCount); ++Occ)
+		{
+			const ShapeUploadInfo& Occluder = UploadObjects[Occ];
+			if (Occluder == Shape)
+			{
+				continue;
+			}
+			const vec3 OccluderCenter = (Occluder.LocalToWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+			const float OccluderRadius = length(vec3(Occluder.ShapeParams.xyz));
+
+			vec3 Test = distance(ShapeCenter, OccluderCenter) * SunDir + ShapeCenter;
+			if (distance(Test, OccluderCenter) < (ShapeRadius + OccluderRadius))
+			{
+				Found.push_back(Occ);
+				if (Found.size() == MAX_SHADOW_CASTERS)
+				{
+					break;
+				}
+			}
+		}
+		ShadowCoverageData.emplace_back(Found);
+	}
+	ShadowCoverage.Upload((void*)ShadowCoverageData.data(), sizeof(ShadowCoverageInfo)* ObjectsCount);
+#endif //ENABLE_SUN_SHADOWS
 
 	// Draw all of the everything
 	if (VisibleObjectsCount > 0)
@@ -502,6 +580,9 @@ void SDFExperiment::Render(const int FrameCounter)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindTextureUnit(1, DepthBuffer);
 	glBindTextureUnit(2, ObjectIdBuffer);
+#if ENABLE_SUN_SHADOWS
+	ShadowCoverage.Bind(GL_SHADER_STORAGE_BUFFER, 3);
+#endif // ENABLE_SUN_SHADOWS
 	ColorShader.Activate();
 #if ENABLE_RESOLUTION_SCALING
 	if (ResolutionScale < 1.0)
