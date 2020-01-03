@@ -51,6 +51,7 @@
 #define ENABLE_ANTIALIASING 0
 #define ENABLE_RESOLUTION_SCALING 0
 #define ENABLE_SUN_SHADOWS 1
+#define ENABLE_SOFT_SHADOWS 0
 #define ENABLE_TEXT_OVERLAY 1
 
 #define VISUALIZE_ALIASING_GRADIENT 0
@@ -62,4 +63,5 @@
 const int MaxIterations = 100;
 const float AlmostZero = 0.001;
 
-#define SUN_DIR vec3(1.0, 1.0, 3.0)
+//#define SUN_DIR vec3(1.0, 1.0, 3.0)
+#define SUN_DIR vec3(-0.3, 0.3, 2.0)

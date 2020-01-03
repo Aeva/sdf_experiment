@@ -179,9 +179,27 @@ bool RayMarch(ObjectInfo Object, RayData Ray, out vec3 Position)
 #endif //ENABLE_CUBETRACE
 
 #if ENABLE_SUN_SHADOWS
-bool RayMarchOcclusionOnly(ObjectInfo Object, RayData Ray)
+float SoftRayMarch(ObjectInfo Object, const RayData Ray)
 {
-	vec3 Position;
-	return RayMarch(Object, Ray, Position);
+	const vec3 LocalRayDir = Ray.LocalDir;
+	const float MaxTravel = length(Ray.LocalStart) + length(Object.ShapeParams.xyz);
+	float Nearest = 1.0/0.0;
+	float Travel = 0.1;
+
+	for (int Step = 0; Step <= MaxIterations; ++Step)
+	{
+		const float SDF = SceneHull(Object.ShapeParams, Ray.LocalDir * Travel + Ray.LocalStart);
+		Nearest = min(SDF, Nearest);
+		if (IS_SOLID(SDF) || Travel >= MaxTravel)
+        {
+			break;
+        }
+		else
+		{
+			Travel += SDF;
+		}
+	}
+
+	return max(Nearest - AlmostZero, 0.0);
 }
 #endif //ENABLE_SUN_SHADOWS

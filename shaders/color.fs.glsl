@@ -51,6 +51,17 @@ void Reconstitute(out vec3 Position, out int ObjectId)
 }
 
 
+#if ENABLE_SOFT_SHADOWS
+vec2 Noise(vec2 Point)
+{
+    Point = fract(Point * 0.1) + 1.0 + Point * vec2(2.0, 3.0) / 1e4;
+    Point = fract(1e5 / (0.1 * Point.x * (Point.y + vec2(0.0, 1.0)) + 1.0));
+    Point = fract(1e5 / (Point * vec2(0.1234, 2.35) + 1.0));
+    return Point;
+}
+#endif // ENABLE_SOFT_SHADOWS
+
+
 void main ()
 {
 	vec3 Position;
@@ -84,11 +95,31 @@ void main ()
 #endif // VISUALIZE_SHADOW_COVERAGE
 
 #if ENABLE_SUN_SHADOWS
-		bool bShadowed = false;
+		float LightIntensity = 1.0;
 		{
 			ivec4 ShadowCasters = ShadowCoverage[ObjectId].ShadowCasters;
 			const vec3 WorldRayStart = Position;
+#if ENABLE_SOFT_SHADOWS
+			const vec3 LightDir = normalize(vec3(SUN_DIR));
+			const float Scattering = 1.0;
+			const int RayCount = 4;
+			const vec3 RayOffsets[4] = \
+			{
+				vec3(Noise(Position.xy + vec2( 0.0, -1.0)), 0.0),
+				vec3(Noise(Position.xy + vec2( 0.0,  1.0)), 0.0),
+				vec3(Noise(Position.xy + vec2( 1.0,  0.0)), 0.0),
+				vec3(Noise(Position.xy + vec2(-1.0,  0.0)), 0.0)
+			};
+			vec3 WorldRayDirs[RayCount];
+			for (int i=0; i<RayCount; ++i)
+			{
+				const float Scale = (float(i) / float(RayCount - 1)) * Scattering;
+				const vec3 Offset = RayOffsets[i % 4];
+				WorldRayDirs[i] = normalize(Offset * Scattering + LightDir);
+			}
+#else
 			const vec3 WorldRayDir = normalize(vec3(SUN_DIR));
+#endif // ENABLE_SOFT_SHADOWS
 
 #if VISUALIZE_SHADOW_COVERAGE
 			for (int i=0; i<4; ++i)
@@ -100,7 +131,7 @@ void main ()
 			}
 #endif // VISUALIZE_SHADOW_COVERAGE
 
-			for (int i=0; i<4 && !bShadowed; ++i)
+			for (int i=0; i<4 && LightIntensity > 0.0; ++i)
 			{
 				int CasterId = ShadowCasters[i];
 				if (CasterId == 0)
@@ -109,20 +140,37 @@ void main ()
 				}
 				ObjectInfo Caster = Objects[CasterId];
 				const vec3 LocalRayStart = Transform3(Caster.WorldToLocal, WorldRayStart);
+#if ENABLE_SOFT_SHADOWS
+				float RayIntensity = 0.0;
+				for (int r=0; r<RayCount; ++r)
+				{
+					const vec3 LocalRayDir = normalize(Transform3(Caster.WorldToLocal, WorldRayStart + WorldRayDirs[r]) - LocalRayStart);
+					const RayData Ray = RayData(WorldRayDirs[r], WorldRayStart, LocalRayDir, LocalRayStart);
+					RayIntensity += SoftRayMarch(Caster, Ray);
+				}
+				RayIntensity /= float(RayCount);
+				LightIntensity = min(LightIntensity, RayIntensity);
+#else
 				const vec3 LocalRayDir = normalize(Transform3(Caster.WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
 				const RayData Ray = RayData(WorldRayDir, WorldRayStart, LocalRayDir, LocalRayStart);
-				bShadowed = RayMarchOcclusionOnly(Caster, Ray);
+				LightIntensity = min(LightIntensity, SoftRayMarch(Caster, Ray));
+#endif // ENABLE_SOFT_SHADOWS
 			}
 		}
+#if ENABLE_SOFT_SHADOWS
+		LightIntensity = min(LightIntensity * 4.0, 1.0);
 #else
-		const bool bShadowed = false;
+		LightIntensity = LightIntensity == 0.0 ? 0.0 : 1.0;
+#endif // ENABLE_SOFT_SHADOWS
+#else
+		const float LightIntensity = 1.0;
 #endif // ENABLE_SUN_SHADOWS
 
 #if VISUALIZE_SHADOW_COVERAGE
 		if (CoverageCount > 0)
 		{
 			float Heat = 1.0 - (float(CoverageCount) / 4.0);
-			if (bShadowed)
+			if (LightIntensity < 1.0)
 			{
 				OutColor = vec4(0.0, 1.0, Heat, 1.0);
 			}
@@ -138,7 +186,7 @@ void main ()
 			OutColor = vec4(vec3(Gray), 1.0);
 		}
 #else
-		OutColor = vec4(Paint(Object, Position, bShadowed), 1.0);
+		OutColor = vec4(Paint(Object, Position, LightIntensity), 1.0);
 #if ENABLE_ANTIALIASING
 		float Count = 1.0;
 		const float Samples = 8.0;
@@ -149,8 +197,8 @@ void main ()
 			for (float i = 0.0; i < Samples; ++i)
 			{
 				const float Scale = i * InvSamples * 0.75;
-				OutColor.xyz += Paint(Object, Offset * Scale + Position, bShadowed);
-				OutColor.xyz += Paint(Object, -Offset * Scale + Position, bShadowed);
+				OutColor.xyz += Paint(Object, Offset * Scale + Position, LightIntensity);
+				OutColor.xyz += Paint(Object, -Offset * Scale + Position, LightIntensity);
 			}
 			Count += Samples * 2.0;
 		}
@@ -160,8 +208,8 @@ void main ()
 			for (float i = 0.0; i < Samples; ++i)
 			{
 				const float Scale = i * InvSamples * 0.75;
-				OutColor.xyz += Paint(Object, Offset * Scale + Position, bShadowed);
-				OutColor.xyz += Paint(Object, -Offset * Scale + Position, bShadowed);
+				OutColor.xyz += Paint(Object, Offset * Scale + Position, LightIntensity);
+				OutColor.xyz += Paint(Object, -Offset * Scale + Position, LightIntensity);
 			}
 			Count += Samples * 2.0;
 		}
