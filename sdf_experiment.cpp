@@ -2,10 +2,13 @@
 #define GLM_FORCE_SWIZZLE
 #include "glm/glm.hpp"
 #include "glm/ext.hpp"
+#include "shaders/defs.glsl"
 #include "lodepng.h"
 #include <cstdlib>
 #include <iostream>
-#include "shaders/defs.glsl"
+#if ENABLE_SUN_SHADOWS
+#include <algorithm>
+#endif
 
 #if PROFILING
 #include "glue/logging.h"
@@ -81,17 +84,33 @@ struct ShapeUploadInfo
 
 
 #if ENABLE_SUN_SHADOWS
+struct OccluderCandidate
+{
+	int Index;
+	float Distance;
+	OccluderCandidate(int InIndex, float InDistance)
+		: Index(InIndex)
+		, Distance(InDistance)
+	{}
+};
+
+
 const size_t MAX_SHADOW_CASTERS = 4;
 struct ShadowCoverageInfo
 {
 	int ShadowCasters[MAX_SHADOW_CASTERS];
 
-	ShadowCoverageInfo(std::vector<int> Found)
+	ShadowCoverageInfo(std::vector<OccluderCandidate> Found)
 		: ShadowCasters{ 0 }
 	{
-		for (int i = 0; i < Found.size(); ++i)
+		std::sort(Found.begin(), Found.end(),
+			[](const OccluderCandidate& LHS, const OccluderCandidate& RHS) -> bool
 		{
-			ShadowCasters[i] = Found[i];
+			return LHS.Distance < RHS.Distance;
+		});
+		for (int i = 0; i < min(Found.size(), MAX_SHADOW_CASTERS); ++i)
+		{
+			ShadowCasters[i] = Found[i].Index;
 		}
 	}
 };
@@ -537,7 +556,7 @@ void SDFExperiment::Render(const int FrameCounter)
 		const vec3 ShapeCenter = (Shape.LocalToWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 		const float ShapeRadius = length(vec3(Shape.ShapeParams.xyz));
 
-		std::vector<int> Found;
+		std::vector<OccluderCandidate> Found;
 		Found.reserve(MAX_SHADOW_CASTERS);
 		for (int Occ = ShadowCastersOffset; Occ < (ShadowCastersOffset + ShadowCastersCount); ++Occ)
 		{
@@ -549,16 +568,13 @@ void SDFExperiment::Render(const int FrameCounter)
 			const vec3 OccluderCenter = (Occluder.LocalToWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 			const float OccluderRadius = length(vec3(Occluder.ShapeParams.xyz));
 
-			vec3 Test = distance(ShapeCenter, OccluderCenter) * SunDir + ShapeCenter;
+			const vec3 Test = distance(ShapeCenter, OccluderCenter) * SunDir + ShapeCenter;
 			if (distance(Test, OccluderCenter) < (ShapeRadius + OccluderRadius))
 			{
-				Found.push_back(Occ);
-				if (Found.size() == MAX_SHADOW_CASTERS)
-				{
-					break;
-				}
+				Found.emplace_back(Occ, distance(ShapeCenter, OccluderCenter) - OccluderRadius);
 			}
 		}
+
 		ShadowCoverageData.emplace_back(Found);
 	}
 	ShadowCoverage.Upload((void*)ShadowCoverageData.data(), sizeof(ShadowCoverageInfo)* ObjectsCount);

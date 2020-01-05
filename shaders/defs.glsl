@@ -63,5 +63,6 @@
 const int MaxIterations = 100;
 const float AlmostZero = 0.001;
 
-//#define SUN_DIR vec3(1.0, 1.0, 3.0)
-#define SUN_DIR vec3(-0.3, 0.3, 2.0)
+#define SUN_DIR vec3(1.0, 1.0, 3.0)
+//#define SUN_DIR vec3(-0.3, 0.3, 2.0)
+
