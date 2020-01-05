@@ -191,6 +191,12 @@ void DrawFrame()
 
 #if PROFILING
 	{
+		int ScreenWidth;
+		int ScreenHeight;
+		GetScreenSize(&ScreenWidth, &ScreenHeight);
+		Log::GetStream() << "Resolution: " << ScreenWidth << " x " << ScreenHeight << "\n\n";
+	}
+	{
 		const double Start = glfwGetTime();
 #endif
 		SDFExperiment::Render(FrameCounter);
