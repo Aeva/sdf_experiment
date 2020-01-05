@@ -253,7 +253,7 @@ void AllocateRenderTargets(bool bErase=false)
 	glTextureParameteri(DepthBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &ObjectIdBuffer);
-	glTextureStorage2D(ObjectIdBuffer, 1, GL_R32F, int(ScreenWidth), int(ScreenHeight));
+	glTextureStorage2D(ObjectIdBuffer, 1, GL_R32I, int(ScreenWidth), int(ScreenHeight));
 	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

@@ -35,10 +35,10 @@ struct SlugInfo
 	{
 		Line = InLine;
 		glCreateTextures(GL_TEXTURE_2D, 1, &TextureID);
-		glTextureStorage2D(TextureID, 1, GL_R8, Text.size(), 1);
+		glTextureStorage2D(TextureID, 1, GL_R8I, Text.size(), 1);
 		glTextureParameteri(TextureID, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTextureParameteri(TextureID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTextureSubImage2D(TextureID, 0, 0, 0, Text.size(), 1, GL_RED, GL_UNSIGNED_BYTE, (const void*)Text.data());
+		glTextureSubImage2D(TextureID, 0, 0, 0, Text.size(), 1, GL_RED_INTEGER, GL_BYTE, (const void*)Text.data());
 
 		GLfloat BufferData[4] = {
 			float(Line),
