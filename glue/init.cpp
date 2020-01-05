@@ -73,7 +73,7 @@ StatusCode SetupGLFW()
 	int ScreenWidth = 512;
 	int ScreenHeight = 512;
 
-	Window = glfwCreateWindow(ScreenWidth, ScreenHeight, "meep", NULL, NULL);
+	Window = glfwCreateWindow(ScreenWidth, ScreenHeight, "tangerine", NULL, NULL);
 	if (!Window)
 	{
 		std::cout << "failed to create glfw window\n";
