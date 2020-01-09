@@ -84,13 +84,13 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\lodepng\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\dependencies\lodepng\include;$(SolutionDir)..\dependencies\glm-0.9.9.6;$(SolutionDir)..\dependencies\glad\include;$(SolutionDir)..\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -100,7 +100,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\lodepng\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\dependencies\lodepng\include;$(SolutionDir)..\dependencies\glm-0.9.9.6;$(SolutionDir)..\dependencies\glad\include;$(SolutionDir)..\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -108,28 +108,28 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\lodepng\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\dependencies\lodepng\include;$(SolutionDir)..\dependencies\glm-0.9.9.6;$(SolutionDir)..\dependencies\glad\include;$(SolutionDir)..\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG_BUILD</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\lodepng\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glm-0.9.9.6;C:\Users\aeva\Projects\sdf_experiment\dependencies\glad\include;C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\dependencies\lodepng\include;$(SolutionDir)..\dependencies\glm-0.9.9.6;$(SolutionDir)..\dependencies\glad\include;$(SolutionDir)..\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\Users\aeva\Projects\sdf_experiment\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
