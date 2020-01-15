@@ -93,5 +93,11 @@
     <None Include="..\shaders\text.vs.glsl">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\shaders\cube.fs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\cube.vs.glsl">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -17,6 +17,7 @@
 using namespace glm;
 
 ShaderPipeline DepthShader;
+ShaderPipeline GloomShader;
 ShaderPipeline ColorShader;
 Buffer ScreenInfo;
 Buffer ViewInfo;
@@ -28,6 +29,9 @@ Buffer ShadowCoverage;
 GLuint DepthPass;
 GLuint DepthBuffer;
 GLuint ObjectIdBuffer;
+
+GLuint GloomPass;
+GLuint GloomBuffer;
 
 #if ENABLE_RESOLUTION_SCALING
 const float ResolutionScale = 0.5;
@@ -260,8 +264,10 @@ void AllocateRenderTargets(bool bErase=false)
 	if (bErase)
 	{
 		glDeleteFramebuffers(1, &DepthPass);
+		glDeleteFramebuffers(1, &GloomPass);
 		glDeleteTextures(1, &DepthBuffer);
 		glDeleteTextures(1, &ObjectIdBuffer);
+		glDeleteTextures(1, &GloomBuffer);
 	}
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &DepthBuffer);
@@ -281,6 +287,17 @@ void AllocateRenderTargets(bool bErase=false)
 	glCreateFramebuffers(1, &DepthPass);
 	glNamedFramebufferTexture(DepthPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
 	glNamedFramebufferTexture(DepthPass, GL_COLOR_ATTACHMENT0, ObjectIdBuffer, 0);
+
+	glCreateTextures(GL_TEXTURE_2D, 1, &GloomBuffer);
+	glTextureStorage2D(GloomBuffer, 1, GL_R8, int(ScreenWidth), int(ScreenHeight));
+	glTextureParameteri(GloomBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(GloomBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTextureParameteri(GloomBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(GloomBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glCreateFramebuffers(1, &GloomPass);
+	glNamedFramebufferTexture(GloomPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
+	glNamedFramebufferTexture(GloomPass, GL_COLOR_ATTACHMENT0, GloomBuffer, 0);
 }
 
 
@@ -289,6 +306,10 @@ StatusCode SDFExperiment::Setup()
 	RETURN_ON_FAIL(DepthShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/depth.vs.glsl"},
 		 {GL_FRAGMENT_SHADER, "shaders/depth.fs.glsl"} }));
+
+	RETURN_ON_FAIL(GloomShader.Setup(
+		{ {GL_VERTEX_SHADER, "shaders/cube.vs.glsl"},
+		 {GL_FRAGMENT_SHADER, "shaders/cube.fs.glsl"} }));
 
 	RETURN_ON_FAIL(ColorShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/color.vs.glsl"},
@@ -301,8 +322,10 @@ StatusCode SDFExperiment::Setup()
 
 	glDepthFunc(GL_GREATER);
 	glClearDepth(0.0);
-	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
 	glDepthRange(1.0, 0.0);
+	glFrontFace(GL_CCW);
 
 #if PROFILING
 	glGenQueries(1, &FrameStartTime);
@@ -460,7 +483,9 @@ void SDFExperiment::Render(const int FrameCounter)
 		ViewInfo.Upload((void*)&BufferData, sizeof(BufferData));
 	}
 
+	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
 	glBindFramebuffer(GL_FRAMEBUFFER, DepthPass);
 	glBindTextureUnit(1, 0);
 	glBindTextureUnit(2, 0);
@@ -592,7 +617,15 @@ void SDFExperiment::Render(const int FrameCounter)
 #endif
 	}
 
+	glDepthMask(GL_FALSE);
+	glEnable(GL_CULL_FACE);
+	glBindFramebuffer(GL_FRAMEBUFFER, GloomPass);
+	GloomShader.Activate();
+	glClear(GL_COLOR_BUFFER_BIT);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
 	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindTextureUnit(1, DepthBuffer);
 	glBindTextureUnit(2, ObjectIdBuffer);

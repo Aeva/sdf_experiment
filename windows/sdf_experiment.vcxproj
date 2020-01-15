@@ -151,6 +151,8 @@
   <ItemGroup>
     <None Include="..\shaders\color.fs.glsl" />
     <None Include="..\shaders\color.vs.glsl" />
+    <None Include="..\shaders\cube.fs.glsl" />
+    <None Include="..\shaders\cube.vs.glsl" />
     <None Include="..\shaders\defs.glsl" />
     <None Include="..\shaders\depth.fs.glsl" />
     <None Include="..\shaders\depth.vs.glsl" />
