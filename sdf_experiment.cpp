@@ -6,9 +6,6 @@
 #include "lodepng.h"
 #include <cstdlib>
 #include <iostream>
-#if ENABLE_SUN_SHADOWS
-#include <algorithm>
-#endif
 
 #if PROFILING
 #include "glue/logging.h"
@@ -21,10 +18,8 @@ ShaderPipeline GloomShader;
 ShaderPipeline ColorShader;
 Buffer ScreenInfo;
 Buffer ViewInfo;
-Buffer AllObjects;
-#if ENABLE_SUN_SHADOWS
-Buffer ShadowCoverage;
-#endif //ENABLE_SUN_SHADOWS
+Buffer VisibleObjectsBuffer;
+Buffer ShadowCastersBuffer;
 
 GLuint DepthPass;
 GLuint DepthBuffer;
@@ -80,45 +75,19 @@ struct ShapeUploadInfo
 		, WorldToLocal(InShape.WorldToLocal)
 	{}
 
+	ShapeUploadInfo(ShapeInfo InShape, int VisibleObjectId)
+		: ClipBounds(vec4(0.0, 0.0, 0.0, 0.0))
+		, DepthRange(vec4(0.0, 0.0, 0.0, float(VisibleObjectId)))
+		, ShapeParams(vec4(InShape.AABB, float(InShape.ShapeFn)))
+		, LocalToWorld(InShape.LocalToWorld)
+		, WorldToLocal(InShape.WorldToLocal)
+	{}
+
 	friend bool operator==(const ShapeUploadInfo& LHS, const ShapeUploadInfo& RHS)
 	{
 		return LHS.ShapeParams == RHS.ShapeParams && LHS.LocalToWorld == RHS.LocalToWorld;
 	}
 };
-
-
-#if ENABLE_SUN_SHADOWS
-struct OccluderCandidate
-{
-	int Index;
-	float Distance;
-	OccluderCandidate(int InIndex, float InDistance)
-		: Index(InIndex)
-		, Distance(InDistance)
-	{}
-};
-
-
-const size_t MAX_SHADOW_CASTERS = 4;
-struct ShadowCoverageInfo
-{
-	int ShadowCasters[MAX_SHADOW_CASTERS];
-
-	ShadowCoverageInfo(std::vector<OccluderCandidate> Found)
-		: ShadowCasters{ 0 }
-	{
-		std::sort(Found.begin(), Found.end(),
-			[](const OccluderCandidate& LHS, const OccluderCandidate& RHS) -> bool
-		{
-			return LHS.Distance < RHS.Distance;
-		});
-		for (int i = 0; i < min(Found.size(), MAX_SHADOW_CASTERS); ++i)
-		{
-			ShadowCasters[i] = Found[i].Index;
-		}
-	}
-};
-#endif //ENABLE_SUN_SHADOWS
 
 
 struct ViewInfoUpload
@@ -158,6 +127,7 @@ ShapeInfo* Onion = nullptr;
 GLuint FrameStartTime;
 GLuint FrameEndTime;
 GLuint DepthPassTime;
+GLuint GloomPassTime;
 GLuint ColorPassTime;
 GLint GetQueryValue(GLuint Id, GLenum Param)
 {
@@ -308,8 +278,8 @@ StatusCode SDFExperiment::Setup()
 		 {GL_FRAGMENT_SHADER, "shaders/depth.fs.glsl"} }));
 
 	RETURN_ON_FAIL(GloomShader.Setup(
-		{ {GL_VERTEX_SHADER, "shaders/cube.vs.glsl"},
-		 {GL_FRAGMENT_SHADER, "shaders/cube.fs.glsl"} }));
+		{ {GL_VERTEX_SHADER, "shaders/gloom.vs.glsl"},
+		 {GL_FRAGMENT_SHADER, "shaders/gloom.fs.glsl"} }));
 
 	RETURN_ON_FAIL(ColorShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/color.vs.glsl"},
@@ -322,7 +292,6 @@ StatusCode SDFExperiment::Setup()
 
 	glDepthFunc(GL_GREATER);
 	glClearDepth(0.0);
-	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
 	glDepthRange(1.0, 0.0);
 	glFrontFace(GL_CCW);
@@ -331,6 +300,7 @@ StatusCode SDFExperiment::Setup()
 	glGenQueries(1, &FrameStartTime);
 	glGenQueries(1, &FrameEndTime);
 	glGenQueries(1, &DepthPassTime);
+	glGenQueries(1, &GloomPassTime);
 	glGenQueries(1, &ColorPassTime);
 #endif
 
@@ -491,6 +461,7 @@ void SDFExperiment::Render(const int FrameCounter)
 	glBindTextureUnit(2, 0);
 	DepthShader.Activate();
 	glClear(GL_DEPTH_BUFFER_BIT);
+	VisibleObjectsBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
 	ScreenInfo.Bind(GL_UNIFORM_BUFFER, 1);
 	ViewInfo.Bind(GL_UNIFORM_BUFFER, 2);
 	UpdateScreenInfo(true);
@@ -547,63 +518,24 @@ void SDFExperiment::Render(const int FrameCounter)
 				MaxViewZ = max(MaxViewZ, ViewCorner.z);
 			}
 		}
-		if (MinDist >= 1.0 && MinClip.x <= 1.0 && MinClip.y <= 1.0 && MaxClip.x >= -1.0 && MaxClip.y >= -1.0 && MaxViewZ < 0.0)
+		const bool bIsVisible = MinDist >= 1.0 && MinClip.x <= 1.0 && MinClip.y <= 1.0 && MaxClip.x >= -1.0 && MaxClip.y >= -1.0 && MaxViewZ < 0.0;
+		const int VisibleObjectId = bIsVisible ? VisibleObjects.size() : -1;
+		if (bIsVisible)
 		{
 			VisibleObjects.emplace_back(Objects[i], vec4(MinClip, MaxClip), vec2(MinDist, MaxDist));
 		}
 		if (Objects[i].bShadowCaster)
 		{
-			ShadowCasters.emplace_back(Objects[i], vec4(MinClip, MaxClip), vec2(MinDist, MaxDist));
+			ShadowCasters.emplace_back(Objects[i], VisibleObjectId);
 		}
 	}
 
 	// Upload the information for objects required for rendering.
 	const int VisibleObjectsCount = VisibleObjects.size();
-	const int ShadowCastersOffset = VisibleObjectsCount;
 	const int ShadowCastersCount = ShadowCasters.size();
 
-	std::vector<ShapeUploadInfo> &UploadObjects = VisibleObjects;
-	for (ShapeUploadInfo& Shape : ShadowCasters)
-	{
-		UploadObjects.push_back(Shape);
-	}
-	AllObjects.Upload((void*)UploadObjects.data(), sizeof(ShapeUploadInfo) * ObjectsCount);
-	AllObjects.Bind(GL_SHADER_STORAGE_BUFFER, 0);
-
-#if ENABLE_SUN_SHADOWS
-	// Sun Occlusion Experiment
-	std::vector<ShadowCoverageInfo> ShadowCoverageData;
-	ShadowCoverageData.reserve(ObjectsCount);
-	const vec3 SunDir = normalize(vec3(SUN_DIR));
-	for (int Vis = 0; Vis < VisibleObjectsCount; ++Vis)
-	{
-		const ShapeUploadInfo& Shape = UploadObjects[Vis];
-		const vec3 ShapeCenter = (Shape.LocalToWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-		const float ShapeRadius = length(vec3(Shape.ShapeParams.xyz));
-
-		std::vector<OccluderCandidate> Found;
-		Found.reserve(MAX_SHADOW_CASTERS);
-		for (int Occ = ShadowCastersOffset; Occ < (ShadowCastersOffset + ShadowCastersCount); ++Occ)
-		{
-			const ShapeUploadInfo& Occluder = UploadObjects[Occ];
-			if (Occluder == Shape)
-			{
-				continue;
-			}
-			const vec3 OccluderCenter = (Occluder.LocalToWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-			const float OccluderRadius = length(vec3(Occluder.ShapeParams.xyz));
-
-			const vec3 Test = distance(ShapeCenter, OccluderCenter) * SunDir + ShapeCenter;
-			if (distance(Test, OccluderCenter) < (ShapeRadius + OccluderRadius))
-			{
-				Found.emplace_back(Occ, distance(ShapeCenter, OccluderCenter) - OccluderRadius);
-			}
-		}
-
-		ShadowCoverageData.emplace_back(Found);
-	}
-	ShadowCoverage.Upload((void*)ShadowCoverageData.data(), sizeof(ShadowCoverageInfo)* ObjectsCount);
-#endif //ENABLE_SUN_SHADOWS
+	VisibleObjectsBuffer.Upload((void*)VisibleObjects.data(), sizeof(ShapeUploadInfo) * ObjectsCount);
+	ShadowCastersBuffer.Upload((void*)ShadowCasters.data(), sizeof(ShapeUploadInfo) * ObjectsCount);
 
 	// Draw all of the everything
 	if (VisibleObjectsCount > 0)
@@ -618,20 +550,37 @@ void SDFExperiment::Render(const int FrameCounter)
 	}
 
 	glDepthMask(GL_FALSE);
-	glEnable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_MIN);
+	glBlendFunc(GL_ONE, GL_ONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, GloomPass);
+	ShadowCastersBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
+	glBindTextureUnit(1, DepthBuffer);
+	glBindTextureUnit(2, ObjectIdBuffer);
 	GloomShader.Activate();
+	glClearColor(1.0, 0.0, 0.0, 0.0);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	// Cast Shadows
+	if (VisibleObjectsCount > 0)
+	{
+#if PROFILING
+		glBeginQuery(GL_TIME_ELAPSED, GloomPassTime);
+#endif
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 3, ShadowCastersCount);
+#if PROFILING
+		glEndQuery(GL_TIME_ELAPSED);
+#endif
+	}
 
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glBindTextureUnit(1, DepthBuffer);
-	glBindTextureUnit(2, ObjectIdBuffer);
-#if ENABLE_SUN_SHADOWS
-	ShadowCoverage.Bind(GL_SHADER_STORAGE_BUFFER, 3);
-#endif // ENABLE_SUN_SHADOWS
+	VisibleObjectsBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
+	glBindTextureUnit(3, GloomBuffer);
 	ColorShader.Activate();
 #if ENABLE_RESOLUTION_SCALING
 	if (ResolutionScale < 1.0)
@@ -654,28 +603,33 @@ void SDFExperiment::Render(const int FrameCounter)
 	{
 		const int StatSamples = 100;
 		static double DepthPassTimeSamplesNS[StatSamples] = { 0.0 };
+		static double GloomPassTimeSamplesNS[StatSamples] = { 0.0 };
 		static double ColorPassTimeSamplesNS[StatSamples] = { 0.0 };
 
 		{
 			const int Sample = FrameCounter % StatSamples;
 			DepthPassTimeSamplesNS[Sample] = double(GetQueryValue(DepthPassTime, GL_QUERY_RESULT));
+			GloomPassTimeSamplesNS[Sample] = double(GetQueryValue(GloomPassTime, GL_QUERY_RESULT));
 			ColorPassTimeSamplesNS[Sample] = double(GetQueryValue(ColorPassTime, GL_QUERY_RESULT));
 		}
 
 		const double ValidSamples = min(FrameCounter + 1, StatSamples);
 		const double InvValidSamples = 1.0 / ValidSamples;
 		double AverageDepthPassTimeNs = 0.0;
+		double AverageGloomPassTimeNs = 0.0;
 		double AverageColorPassTimeNs = 0.0;
 		for (int Sample = 0; Sample < ValidSamples; ++Sample)
 		{
 			AverageDepthPassTimeNs += DepthPassTimeSamplesNS[Sample] * InvValidSamples;
+			AverageGloomPassTimeNs += GloomPassTimeSamplesNS[Sample] * InvValidSamples;
 			AverageColorPassTimeNs += ColorPassTimeSamplesNS[Sample] * InvValidSamples;
 		}
-		const double AverageTotalDrawTimeNs = AverageDepthPassTimeNs + AverageColorPassTimeNs;
+		const double AverageTotalDrawTimeNs = AverageDepthPassTimeNs + AverageGloomPassTimeNs + AverageColorPassTimeNs;
 		Log::GetStream() \
 			<< "Objects Drawn: " << VisibleObjectsCount << " / " << Objects.size() << "\n\n"
 			<< "Average GPU Times:\n"
 			<< " - Depth: " << (AverageDepthPassTimeNs * 1e-6) << " ms\n"
+			<< " - Gloom: " << (AverageGloomPassTimeNs * 1e-6) << " ms\n"
 			<< " - Color: " << (AverageColorPassTimeNs * 1e-6) << " ms\n"
 			<< " - Total: " << (AverageTotalDrawTimeNs * 1e-6) << " ms\n"
 			<< "\n";

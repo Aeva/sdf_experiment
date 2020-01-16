@@ -49,7 +49,7 @@ vec3 PaintAxis(const ColorSDF Shape)
 
 vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal, const float LightIntensity)
 {
-#if ENABLE_SUN_SHADOWS
+#if 1
 	// Sun Light
 	const vec3 LightPosition = normalize(-SUN_DIR);
 	const float CosAngle = dot(LightPosition, WorldNormal) * LightIntensity;

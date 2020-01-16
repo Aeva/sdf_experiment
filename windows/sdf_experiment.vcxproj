@@ -156,6 +156,8 @@
     <None Include="..\shaders\defs.glsl" />
     <None Include="..\shaders\depth.fs.glsl" />
     <None Include="..\shaders\depth.vs.glsl" />
+    <None Include="..\shaders\gloom.fs.glsl" />
+    <None Include="..\shaders\gloom.vs.glsl" />
     <None Include="..\shaders\math.glsl" />
     <None Include="..\shaders\objects.glsl" />
     <None Include="..\shaders\paint.glsl" />

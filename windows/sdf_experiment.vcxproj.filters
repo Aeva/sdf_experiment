@@ -99,5 +99,11 @@
     <None Include="..\shaders\cube.vs.glsl">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\shaders\gloom.fs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\gloom.vs.glsl">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

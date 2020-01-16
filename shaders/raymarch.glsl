@@ -178,7 +178,7 @@ bool RayMarch(ObjectInfo Object, RayData Ray, out vec3 Position)
 #define RayMarch RayMarchInner
 #endif //ENABLE_CUBETRACE
 
-#if ENABLE_SUN_SHADOWS
+
 float SoftRayMarch(ObjectInfo Object, const RayData Ray)
 {
 	const vec3 LocalRayDir = Ray.LocalDir;
@@ -202,4 +202,3 @@ float SoftRayMarch(ObjectInfo Object, const RayData Ray)
 
 	return max(Nearest - AlmostZero, 0.0);
 }
-#endif //ENABLE_SUN_SHADOWS
