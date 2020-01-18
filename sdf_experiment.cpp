@@ -424,13 +424,19 @@ void SDFExperiment::Render(const int FrameCounter)
 
 	const vec3 OriginStart = vec3(15.0, 0.0, 2.0);
 	const vec3 OriginMiddle = vec3(5.0, 5.0, 2.0);
+#if ENABLE_FIXATE_UPON_ORANGE
+	const vec3 OriginEnd = vec3(5.0, 5.0, 3.0);
+#else
 	const vec3 OriginEnd = vec3(10.0, 10.0, 5.0);
-	//const vec3 OriginEnd = vec3(5.0, 5.0, 3.0);
+#endif // ENABLE_FIXATE_UPON_ORANGE
 	const float Alpha = min(Time / 5.0, 1.0);
 
 	const vec3 CameraOrigin = mix(mix(OriginStart, OriginMiddle, Alpha), mix(OriginMiddle, OriginEnd, Alpha), Alpha);
+#if ENABLE_FIXATE_UPON_ORANGE
+	const vec3 CameraFocus = vec3(3.0, 0.0, 0.5);
+#else
 	const vec3 CameraFocus = vec3(0.0, 0.0, 0.75);
-	//const vec3 CameraFocus = vec3(3.0, 0.0, 0.5);
+#endif // ENABLE_FIXATE_UPON_ORANGE
 
 	const mat4 WorldToView = lookAt(CameraOrigin, CameraFocus, vec3(0.0, 0.0, 1.0));
 	const mat4 ViewToWorld = inverse(WorldToView);

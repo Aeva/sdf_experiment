@@ -324,35 +324,49 @@ float FancyBoxHull(vec3 Point, vec3 Bounds)
 }
 
 
-#define USE_TWIST 1
+#define SLICES 0
+#define TWIST_COLOR 0
+#define TWIST_HULL 0
+#define DISSOLVE 0
 ColorSDF TangerineColor(vec3 Local)
 {
-#if USE_TWIST
-	//Local = Twist(Local, length(Local.xy) * 5.0);
-#endif // USE_TWIST
+#if TWIST_COLOR
+	Local = Twist(Local, length(Local.xy) * 5.0);
+#endif // TWIST_COLOR
 	return SphubeColor(Local, 0.5, PAINT_TANGERINE);
 }
 
 
 float TangerineHull(vec3 Local)
 {
-#if USE_TWIST
 #if ENABLE_HOVERING_SHAPES
 	const float CounterZ = (-sin(Time * 2.0 + 1.0) + 0.5) / 2.5;
 	vec3 BoxLocal = Local - vec3(0.0, 0.0, CounterZ);
 #else
 	vec3 BoxLocal = Local;
 #endif // ENABLE_HOVERING_SHAPES
+#if SLICES
 	const float Repeat = 0.5;
 	BoxLocal.z = mod(BoxLocal.z + 0.5 * Repeat, Repeat) - 0.5 * Repeat;
-	//Local = Twist(Local, length(Local.xy) * 5.0);
-	return opSubtraction(SphubeHull(Local, 0.5, PAINT_TANGERINE), sdBox(BoxLocal, vec3(2.0, 2.0, Repeat * 0.3)));
-	//return opSubtraction(opIntersection(SphubeHull(Local, 0.5, PAINT_TANGERINE), sdGloop(Local, 10.0)), sdBox(BoxLocal, vec3(2.0, 2.0, Repeat * 0.3)));
+#endif // SLICES
+#if TWIST_HULL
+	Local = Twist(Local, length(Local.xy) * 5.0);
+#endif // TWIST_HULL
+	float Dist = SphubeHull(Local, 0.5, PAINT_TANGERINE);
+#if DISSOLVE
+	Dist = opIntersection(Dist, sdGloop(Local, 10.0));
+#endif // DISSOLVE
+#if SLICES
+	Dist = opSubtraction(Dist, sdBox(BoxLocal, vec3(2.0, 2.0, Repeat * 0.3)));
 #else
-	return opSubtraction(SphubeHull(Local, 0.5, PAINT_TANGERINE), -Local.z);
-#endif // USE_TWIST
+	Dist = opSubtraction(Dist, -Local.z);
+#endif //SLICES
+	return Dist;
 }
-#undef USE_TWIST
+#undef SLICES
+#undef TWIST_COLOR
+#undef TWIST_HULL
+#undef DISSOLVE
 
 
 ColorSDF LimeColor(vec3 Local)

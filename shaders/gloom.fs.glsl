@@ -49,7 +49,11 @@ void main ()
 	int ObjectId;
 	Reconstitute(Position, ObjectId);
 
+#if ENABLE_SELF_SHADOWING
+	if (ObjectId == -1)
+#else
 	if (ObjectId == -1 || ObjectId == ShadowCasterId)
+#endif // ENABLE_SELF_SHADOWING
 	{
 		OutLightIntensity = 1.0;
 	}
