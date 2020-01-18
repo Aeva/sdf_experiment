@@ -65,3 +65,17 @@ ColorSDF SceneColor(vec4 ShapeParams, vec3 Local)
 	}
 #endif
 }
+
+
+vec4 SceneTransmission(vec4 ShapeParams, vec3 Local)
+{
+	const vec3 ShapeBounds = ShapeParams.xyz;
+	const int ShapeFn = int(ShapeParams.w);
+	vec3 Color = vec3(0.0, 0.0, 0.0);
+	float Step = 0.1;
+	if (ShapeFn == SHAPE_X_AXIS)
+	{
+		Color = TangerineTransmission(Local);
+	}
+	return vec4(Color, Step);
+}

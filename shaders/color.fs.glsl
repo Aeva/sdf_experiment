@@ -73,9 +73,13 @@ void main ()
 		}
 #else
 		const vec2 UV = gl_FragCoord.xy * ScreenSize.zw;
-		const float LightIntensity = texture(GloomBuffer, UV).r;
+#if ENABLE_LIGHT_TRANSMISSION
+		const vec3 Transmission = texture(GloomBuffer, UV).rgb;
+#else
+		const float Transmission = texture(GloomBuffer, UV).r;
+#endif // ENABLE_LIGHT_TRANSMISSION
 		ObjectInfo Object = Objects[ObjectId];
-		OutColor = vec4(Paint(Object, Position, LightIntensity), 1.0);
+		OutColor = vec4(Paint(Object, Position, Transmission), 1.0);
 
 #if ENABLE_ANTIALIASING
 		float Count = 1.0;
@@ -87,8 +91,8 @@ void main ()
 			for (float i = 0.0; i < Samples; ++i)
 			{
 				const float Scale = i * InvSamples * 0.75;
-				OutColor.xyz += Paint(Object, Offset * Scale + Position, LightIntensity);
-				OutColor.xyz += Paint(Object, -Offset * Scale + Position, LightIntensity);
+				OutColor.xyz += Paint(Object, Offset * Scale + Position, Transmission);
+				OutColor.xyz += Paint(Object, -Offset * Scale + Position, Transmission);
 			}
 			Count += Samples * 2.0;
 		}
@@ -98,8 +102,8 @@ void main ()
 			for (float i = 0.0; i < Samples; ++i)
 			{
 				const float Scale = i * InvSamples * 0.75;
-				OutColor.xyz += Paint(Object, Offset * Scale + Position, LightIntensity);
-				OutColor.xyz += Paint(Object, -Offset * Scale + Position, LightIntensity);
+				OutColor.xyz += Paint(Object, Offset * Scale + Position, Transmission);
+				OutColor.xyz += Paint(Object, -Offset * Scale + Position, Transmission);
 			}
 			Count += Samples * 2.0;
 		}

@@ -179,38 +179,49 @@ bool RayMarch(ObjectInfo Object, RayData Ray, out vec3 Position)
 #endif //ENABLE_CUBETRACE
 
 
-float SoftRayMarch(ObjectInfo Object, const RayData Ray)
+vec2 OcclusionRayMarch(ObjectInfo Object, const RayData Ray)
 {
+	float Travel = 0.1;
 #if ENABLE_CUBETRACE
 	float Distance = CubeTrace(Object.ShapeParams.xyz, Ray);
 	if (Distance >= 0.0)
 #endif // ENABLE_CUBETRACE
 	{
-		const vec3 LocalRayDir = Ray.LocalDir;
 		const float MaxTravel = length(Ray.LocalStart) + length(Object.ShapeParams.xyz);
-		float Nearest = 1.0/0.0;
-		float Travel = 0.1;
-
 		for (int Step = 0; Step <= MaxIterations; ++Step)
 		{
 			const float SDF = SceneHull(Object.ShapeParams, Ray.LocalDir * Travel + Ray.LocalStart);
-			Nearest = min(SDF, Nearest);
-			if (IS_SOLID(SDF) || Travel >= MaxTravel)
+			Travel += SDF;
+			if (IS_SOLID(SDF))
 			{
-				break;
+				return vec2(0.0, Travel);
 			}
-			else
+			else if (Travel >= MaxTravel)
 			{
-				Travel += SDF;
+				return vec2(1.0, Travel);
 			}
 		}
-
-		return max(Nearest - AlmostZero, 0.0);
 	}
-#if ENABLE_CUBETRACE
-	else
-	{
-		return 1.0;
-	}
-#endif // ENABLE_CUBETRACE
+	return vec2(1.0, Travel);
 }
+
+
+#if ENABLE_LIGHT_TRANSMISSION
+vec3 TransmissionSearch(ObjectInfo Object, const RayData Ray, const float TravelStart)
+{
+	const float MaxTravel = length(Ray.LocalStart) + length(Object.ShapeParams.xyz);
+	vec3 Transmission = vec3(1.0);
+	float Travel = TravelStart;
+	for (int Step = 0; Step <= MaxIterations; ++Step)
+	{
+		vec4 Fnord = SceneTransmission(Object.ShapeParams, Ray.LocalDir * Travel + Ray.LocalStart);
+		Transmission *= Fnord.xyz;
+		Travel += Fnord.w;
+		if (Transmission.x + Transmission.y + Transmission.z < AlmostZero || Travel > MaxTravel)
+		{
+			break;
+		}
+	}
+	return Transmission;
+}
+#endif // ENABLE_LIGHT_TRANSMISSION

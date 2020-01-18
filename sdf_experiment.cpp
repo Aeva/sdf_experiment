@@ -33,6 +33,13 @@ const float ResolutionScale = 0.5;
 #endif //ENABLE_RESOLUTION_SCALING
 
 
+#if ENABLE_LIGHT_TRANSMISSION
+#define GLOOM_BUFFER_FORMAT GL_RGB8
+#else
+#define GLOOM_BUFFER_FORMAT GL_R8
+#endif // ENABLE_LIGHT_TRANSMISSION
+
+
 struct ShapeInfo
 {
 	mat4 LocalToWorld;
@@ -259,7 +266,7 @@ void AllocateRenderTargets(bool bErase=false)
 	glNamedFramebufferTexture(DepthPass, GL_COLOR_ATTACHMENT0, ObjectIdBuffer, 0);
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &GloomBuffer);
-	glTextureStorage2D(GloomBuffer, 1, GL_R8, int(ScreenWidth), int(ScreenHeight));
+	glTextureStorage2D(GloomBuffer, 1, GLOOM_BUFFER_FORMAT, int(ScreenWidth), int(ScreenHeight));
 	glTextureParameteri(GloomBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTextureParameteri(GloomBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureParameteri(GloomBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -559,14 +566,14 @@ void SDFExperiment::Render(const int FrameCounter)
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
-	glBlendEquation(GL_MIN);
-	glBlendFunc(GL_ONE, GL_ONE);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_DST_COLOR, GL_ZERO);
 	glBindFramebuffer(GL_FRAMEBUFFER, GloomPass);
 	ShadowCastersBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
 	glBindTextureUnit(1, DepthBuffer);
 	glBindTextureUnit(2, ObjectIdBuffer);
 	GloomShader.Activate();
-	glClearColor(1.0, 0.0, 0.0, 0.0);
+	glClearColor(1.0, 1.0, 1.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	// Cast Shadows

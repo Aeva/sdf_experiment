@@ -1,6 +1,13 @@
 prepend: shaders/shapes.glsl
 --------------------------------------------------------------------------------
 
+#if ENABLE_LIGHT_TRANSMISSION
+#define TRANSMISSION_TYPE vec3
+#else
+#define TRANSMISSION_TYPE float
+#endif // ENABLE_LIGHT_TRANSMISSION
+
+
 vec3 PaintTangerine(const ColorSDF Shape, const vec3 Flesh, const vec3 Fnord, const vec3 Rind)
 {
 	if (Shape.InnerDistance > -0.1)
@@ -47,13 +54,17 @@ vec3 PaintAxis(const ColorSDF Shape)
 }
 
 
-vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal, const float LightIntensity)
+vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal, const TRANSMISSION_TYPE Transmission)
 {
 #if 1
 	// Sun Light
 	const vec3 LightPosition = normalize(-SUN_DIR);
-	const float CosAngle = dot(LightPosition, WorldNormal) * LightIntensity;
-	return BaseColor * max(-CosAngle, 0.5);
+	const float CosAngle = dot(LightPosition, WorldNormal);
+#if ENABLE_LIGHT_TRANSMISSION
+	return BaseColor * max(-CosAngle * Transmission, 0.5);
+#else
+	return BaseColor * max(-CosAngle * Transmission, 0.5);
+#endif // ENABLE_LIGHT_TRANSMISSION
 #else
 	// Point Light
 	const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
@@ -63,7 +74,7 @@ vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal, 
 }
 
 
-vec3 PaintCube(ObjectInfo Object, vec3 WorldPosition, const float LightIntensity)
+vec3 PaintCube(ObjectInfo Object, vec3 WorldPosition, const TRANSMISSION_TYPE Transmission)
 {
 	int ShapeFn = int(Object.ShapeParams.w);
 	const vec3 LocalPosition = Transform3(Object.WorldToLocal, WorldPosition);
@@ -90,17 +101,17 @@ vec3 PaintCube(ObjectInfo Object, vec3 WorldPosition, const float LightIntensity
 	{
 		return vec3(1.0, 0.0, 0.0);
 	}
-	return Illuminate(Color, WorldPosition, WorldNormal, LightIntensity);
+	return Illuminate(Color, WorldPosition, WorldNormal, Transmission);
 }
 
 
-vec3 Paint(ObjectInfo Object, vec3 Point, const float LightIntensity)
+vec3 Paint(ObjectInfo Object, vec3 Point, const TRANSMISSION_TYPE Transmission)
 {
 	int ShapeFn = int(Object.ShapeParams.w);
 
 	if (ShapeFn > CUBE_TRACEABLES)
 	{
-		return PaintCube(Object, Point, LightIntensity);
+		return PaintCube(Object, Point, Transmission);
 	}
 	
 	ColorSDF Shape = SceneColor(Object.ShapeParams, Transform3(Object.WorldToLocal, Point));
@@ -155,5 +166,5 @@ vec3 Paint(ObjectInfo Object, vec3 Point, const float LightIntensity)
         return vec3(1.0, 0.0, 0.0);
     }
 
-	return Illuminate(Color, Point, WorldNormal, LightIntensity);
+	return Illuminate(Color, Point, WorldNormal, Transmission);
 }

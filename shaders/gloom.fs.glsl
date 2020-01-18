@@ -4,7 +4,11 @@ prepend: shaders/scene.glsl
 prepend: shaders/raymarch.glsl
 --------------------------------------------------------------------------------
 
-layout(location = 0) out float OutLightIntensity;
+#if ENABLE_LIGHT_TRANSMISSION
+layout(location = 0) out vec3 OutTransmission;
+#else
+layout(location = 0) out float OutTransmission;
+#endif // ENABLE_LIGHT_TRANSMISSION
 layout(binding = 1) uniform sampler2D DepthBuffer;
 layout(binding = 2) uniform isampler2D ObjectIdBuffer;
 
@@ -55,7 +59,11 @@ void main ()
 	if (ObjectId == -1 || ObjectId == ShadowCasterId)
 #endif // ENABLE_SELF_SHADOWING
 	{
-		OutLightIntensity = 1.0;
+#if ENABLE_LIGHT_TRANSMISSION
+		OutTransmission = vec3(1.0);
+#else
+		OutTransmission = 1.0;
+#endif // ENABLE_LIGHT_TRANSMISSION
 	}
 	else
 	{
@@ -64,6 +72,20 @@ void main ()
 		const vec3 LocalRayStart = Transform3(ShadowCaster.WorldToLocal, WorldRayStart);
 		const vec3 LocalRayDir = normalize(Transform3(ShadowCaster.WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
 		const RayData Ray = RayData(WorldRayDir, WorldRayStart, LocalRayDir, LocalRayStart);
-		OutLightIntensity = SoftRayMarch(ShadowCaster, Ray) == 0.0 ? 0.0 : 1.0;
+		const vec2 Occlusion = OcclusionRayMarch(ShadowCaster, Ray);
+		const float Illumination = Occlusion.x;
+#if ENABLE_LIGHT_TRANSMISSION
+		const float Traveled = Occlusion.y;
+		if (Illumination == 0.0)
+		{
+			OutTransmission = TransmissionSearch(ShadowCaster, Ray, Traveled);
+		}
+		else
+		{
+			OutTransmission = vec3(Illumination);
+		}
+#else
+		OutTransmission = Illumination;
+#endif // ENABLE_LIGHT_TRANSMISSION
 	}
 }
