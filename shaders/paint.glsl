@@ -61,7 +61,15 @@ vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal, 
 	const vec3 LightPosition = normalize(-SUN_DIR);
 	const float CosAngle = dot(LightPosition, WorldNormal);
 #if ENABLE_LIGHT_TRANSMISSION
-	return BaseColor * max(-CosAngle * Transmission, 0.5);
+	const float CombinedTransmission = Transmission.x + Transmission.y + Transmission.z;
+	if (CombinedTransmission == 3.0)
+	{
+		return BaseColor * max(-CosAngle * Transmission, 0.5);
+	}
+	else
+	{
+		return BaseColor * max(abs(CosAngle) * Transmission, 0.5);
+	}
 #else
 	return BaseColor * max(-CosAngle * Transmission, 0.5);
 #endif // ENABLE_LIGHT_TRANSMISSION
