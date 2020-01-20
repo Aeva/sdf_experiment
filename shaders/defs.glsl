@@ -48,7 +48,7 @@
 
 #define ENABLE_CUBETRACE 1
 #define ENABLE_HOVERING_SHAPES 1
-#define ENABLE_ANTIALIASING 1
+#define ENABLE_ANTIALIASING 0
 #define ENABLE_RESOLUTION_SCALING 0
 #define ENABLE_TEXT_OVERLAY 1
 #define ENABLE_SELF_SHADOWING 1
@@ -62,6 +62,7 @@
 // COMMON CONSTANTS
 // ----------------
 const int MaxIterations = 100;
+const int CoarserMaxIterations = 20;
 const float AlmostZero = 0.001;
 
 #define SUN_DIR vec3(1.0, 1.0, 3.0)

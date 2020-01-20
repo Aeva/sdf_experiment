@@ -2,6 +2,13 @@ prepend: shaders/objects.glsl
 --------------------------------------------------------------------------------
 
 
+#if ENABLE_LIGHT_TRANSMISSION
+#define TRANSMISSION_TYPE vec3
+#else
+#define TRANSMISSION_TYPE float
+#endif // ENABLE_LIGHT_TRANSMISSION
+
+
 struct ColorSDF
 {
     float Distance;
@@ -17,7 +24,7 @@ const ColorSDF DiscardSDF = ColorSDF(0.0, 0.0, PAINT_DISCARD, vec3(0.0), vec3(0.
 
 float SceneHull(vec4 ShapeParams, vec3 LocalPosition);
 ColorSDF SceneColor(vec4 ShapeParams, vec3 LocalPosition);
-vec4 SceneTransmission(vec4 ShapeParams, vec3 Local);
+int SceneTransmission(vec4 ShapeParams, vec3 Local);
 
 
 vec3 CubeWorldNormal(ObjectInfo Object, vec3 LocalPosition)
@@ -364,27 +371,19 @@ float TangerineHull(vec3 Local)
 #endif //SLICES
 	return Dist;
 }
-
-
-vec3 TangerineTransmission(vec3 Local)
-{
-#if TWIST_COLOR
-	Local = Twist(Local, length(Local.xy) * 5.0);
-#endif // TWIST_COLOR
-	float Dist = SphubeHull(Local, 0.5, PAINT_TANGERINE);
-	if (Dist > -0.1)
-	{
-		return vec3(0.99, 0.0, 0.0);
-	}
-	else
-	{
-		return vec3(0.999, 0.0, 0.0);
-	}
-}
 #undef SLICES
 #undef TWIST_COLOR
 #undef TWIST_HULL
 #undef DISSOLVE
+
+
+int TangerineTransmission(vec3 Local)
+{
+	ColorSDF Shape = TangerineColor(Local);
+	// 0 == Rind
+	// 1 == Yummy
+	return Shape.InnerDistance > -0.1 ? 0 : 1;
+}
 
 
 ColorSDF LimeColor(vec3 Local)

@@ -47,6 +47,14 @@ void Reconstitute(out vec3 Position, out int ObjectId)
 }
 
 
+RayData GetOcclusionRay(const vec3 WorldRayStart, const vec3 WorldRayDir)
+{
+	const vec3 LocalRayStart = Transform3(ShadowCaster.WorldToLocal, WorldRayStart);
+	const vec3 LocalRayDir = normalize(Transform3(ShadowCaster.WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
+	return RayData(WorldRayDir, WorldRayStart, LocalRayDir, LocalRayStart);
+}
+
+
 void main ()
 {
 	vec3 Position;
@@ -65,27 +73,18 @@ void main ()
 		OutTransmission = 1.0;
 #endif // ENABLE_LIGHT_TRANSMISSION
 	}
-	else
-	{
-		const vec3 WorldRayStart = Position;
-		const vec3 WorldRayDir = normalize(vec3(SUN_DIR));
-		const vec3 LocalRayStart = Transform3(ShadowCaster.WorldToLocal, WorldRayStart);
-		const vec3 LocalRayDir = normalize(Transform3(ShadowCaster.WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
-		const RayData Ray = RayData(WorldRayDir, WorldRayStart, LocalRayDir, LocalRayStart);
-		const vec2 Occlusion = OcclusionRayMarch(ShadowCaster, Ray);
-		const float Illumination = Occlusion.x;
+
+	const vec3 RayDir = normalize(vec3(SUN_DIR));
+	const RayData Ray = GetOcclusionRay(Position, RayDir);
+
 #if ENABLE_LIGHT_TRANSMISSION
-		const float Traveled = Occlusion.y;
-		if (Illumination == 0.0)
-		{
-			OutTransmission = TransmissionSearch(ShadowCaster, Ray, Traveled);
-		}
-		else
-		{
-			OutTransmission = vec3(Illumination);
-		}
-#else
-		OutTransmission = Illumination;
+	if (ShapeIsTransmissive(ShadowCaster.ShapeParams))
+	{
+		OutTransmission = TransmissiveSearch(ShadowCaster, Ray);
+	}
+	else
 #endif // ENABLE_LIGHT_TRANSMISSION
+	{
+		OutTransmission = OcclusionRayMarch(ShadowCaster, Ray);
 	}
 }

@@ -67,15 +67,24 @@ ColorSDF SceneColor(vec4 ShapeParams, vec3 Local)
 }
 
 
-vec4 SceneTransmission(vec4 ShapeParams, vec3 Local)
+bool ShapeIsTransmissive(vec4 ShapeParams)
 {
+	const int ShapeFn = int(ShapeParams.w);
+	return ShapeFn == SHAPE_X_AXIS;
+}
+
+
+int SceneTransmission(vec4 ShapeParams, vec3 Local)
+{
+	const float Dist = SceneHull(ShapeParams, Local);
 	const vec3 ShapeBounds = ShapeParams.xyz;
 	const int ShapeFn = int(ShapeParams.w);
-	vec3 Color = vec3(0.0, 0.0, 0.0);
-	float Step = 0.1;
-	if (ShapeFn == SHAPE_X_AXIS)
+	if (!IS_SOLID(Dist))
 	{
-		Color = TangerineTransmission(Local);
+		return -1;
 	}
-	return vec4(Color, Step);
+	else if (ShapeFn == SHAPE_X_AXIS)
+	{
+		return TangerineTransmission(Local);
+	}
 }

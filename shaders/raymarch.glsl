@@ -179,14 +179,14 @@ bool RayMarch(ObjectInfo Object, RayData Ray, out vec3 Position)
 #endif //ENABLE_CUBETRACE
 
 
-vec2 OcclusionRayMarch(ObjectInfo Object, const RayData Ray)
+TRANSMISSION_TYPE OcclusionRayMarch(ObjectInfo Object, const RayData Ray)
 {
-	float Travel = 0.1;
 #if ENABLE_CUBETRACE
 	float Distance = CubeTrace(Object.ShapeParams.xyz, Ray);
 	if (Distance >= 0.0)
 #endif // ENABLE_CUBETRACE
 	{
+		float Travel = 0.1;
 		const float MaxTravel = length(Ray.LocalStart) + length(Object.ShapeParams.xyz);
 		for (int Step = 0; Step <= MaxIterations; ++Step)
 		{
@@ -194,34 +194,63 @@ vec2 OcclusionRayMarch(ObjectInfo Object, const RayData Ray)
 			Travel += SDF;
 			if (IS_SOLID(SDF))
 			{
-				return vec2(0.0, Travel);
+				return TRANSMISSION_TYPE(0.0);
 			}
 			else if (Travel >= MaxTravel)
 			{
-				return vec2(1.0, Travel);
+				return TRANSMISSION_TYPE(1.0);
 			}
 		}
 	}
-	return vec2(1.0, Travel);
+	return TRANSMISSION_TYPE(1.0);
 }
 
 
 #if ENABLE_LIGHT_TRANSMISSION
-vec3 TransmissionSearch(ObjectInfo Object, const RayData Ray, const float TravelStart)
+vec3 TransmissiveSearch(ObjectInfo Object, const RayData Ray)
 {
-	const float MaxTravel = length(Ray.LocalStart) + length(Object.ShapeParams.xyz);
-	vec3 Transmission = vec3(1.0);
-	float Travel = TravelStart;
-	for (int Step = 0; Step <= MaxIterations; ++Step)
+#if ENABLE_CUBETRACE
+	float Distance = CubeTrace(Object.ShapeParams.xyz, Ray);
+	if (Distance >= 0.0)
+#endif // ENABLE_CUBETRACE
 	{
-		vec4 Fnord = SceneTransmission(Object.ShapeParams, Ray.LocalDir * Travel + Ray.LocalStart);
-		Transmission *= Fnord.xyz;
-		Travel += Fnord.w;
-		if (Transmission.x + Transmission.y + Transmission.z < AlmostZero || Travel > MaxTravel)
+		float Forward = 0.1;
+		float Backward = length(Ray.LocalStart) + length(Object.ShapeParams.xyz);
+		for (int Step = 0; Step <= CoarserMaxIterations; ++Step)
 		{
-			break;
+			Forward += SceneHull(Object.ShapeParams, Ray.LocalDir * Forward + Ray.LocalStart);
+			Backward -= SceneHull(Object.ShapeParams, Ray.LocalDir * Backward + Ray.LocalStart);
+			if (Forward >= Backward)
+			{
+				return vec3(1.0);
+			}
+		}
+
+		const float StepSize = (Backward - Forward) / float(MaxIterations);
+		float Seek = Forward;
+		int Buckets[2] = { 0, 0 };
+		for (int Step = 0; Step <= MaxIterations; ++Step)
+		{
+			vec3 Local = Ray.LocalDir * Seek + Ray.LocalStart;
+			int Bucket = SceneTransmission(Object.ShapeParams, Ray.LocalDir * Seek + Ray.LocalStart);
+			if (Bucket > -1)
+			{
+				++Buckets[Bucket];
+			}
+			Seek += StepSize;
+		}
+		{
+			const vec3 Flesh = vec3(0.935, 0.453, 0.08);
+			const vec3 Rind  = vec3(1.0, 0.767, 0.0);
+			vec3 Transmission = vec3(1.0);
+			float Power = (float(Buckets[0]) * StepSize) / 0.25;
+			Transmission *= pow(Rind * 0.6, vec3(Power));
+
+			Power = (float(Buckets[1]) * StepSize) / 0.3;
+			Transmission *= pow(Flesh * 0.65, vec3(Power));
+			return Transmission;
 		}
 	}
-	return Transmission;
+	return vec3(1.0);
 }
 #endif // ENABLE_LIGHT_TRANSMISSION
