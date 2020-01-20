@@ -99,6 +99,22 @@ vec3 PaintCube(ObjectInfo Object, vec3 WorldPosition, const TRANSMISSION_TYPE Tr
 	{
 		Color = vec3(0.0, 0.0, abs(WorldPosition.z) / 2.0) + 0.2;
 	}
+	else if (ShapeFn == SHAPE_WHITE_SLAB)
+	{
+		Color = vec3(1.0);
+	}
+	else if (ShapeFn == SHAPE_CYAN_SLAB)
+	{
+		Color = vec3(0.0, 1.0, 1.0);
+	}
+	else if (ShapeFn == SHAPE_YELLOW_SLAB)
+	{
+		Color = vec3(1.0, 1.0, 0.0);
+	}
+	else if (ShapeFn == SHAPE_MAGENTA_SLAB)
+	{
+		Color = vec3(1.0, 0.0, 1.0);
+	}
 	else
 	{
 		return vec3(1.0, 0.0, 0.0);

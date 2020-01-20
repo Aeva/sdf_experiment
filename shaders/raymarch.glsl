@@ -239,6 +239,9 @@ vec3 TransmissiveSearch(ObjectInfo Object, const RayData Ray)
 			}
 			Seek += StepSize;
 		}
+
+		const int ShapeFn = int(Object.ShapeParams.w);
+		if (ShapeFn == SHAPE_X_AXIS)
 		{
 			const vec3 Flesh = vec3(0.935, 0.453, 0.08);
 			const vec3 Rind  = vec3(1.0, 0.767, 0.0);
@@ -249,6 +252,21 @@ vec3 TransmissiveSearch(ObjectInfo Object, const RayData Ray)
 			Power = (float(Buckets[1]) * StepSize) / 0.3;
 			Transmission *= pow(Flesh * 0.65, vec3(Power));
 			return Transmission;
+		}
+		else if (ShapeFn == SHAPE_CYAN_SLAB)
+		{
+			float Power = (float(Buckets[0]) * StepSize) / 0.9;
+			return pow(vec3(0.0, 1.0, 1.0), vec3(Power));
+		}
+		else if (ShapeFn == SHAPE_YELLOW_SLAB)
+		{
+			float Power = (float(Buckets[0]) * StepSize) / 0.9;
+			return pow(vec3(1.0, 1.0, 0.0), vec3(Power));
+		}
+		else if (ShapeFn == SHAPE_MAGENTA_SLAB)
+		{
+			float Power = (float(Buckets[0]) * StepSize) / 0.9;
+			return pow(vec3(1.0, 0.0, 1.0), vec3(Power));
 		}
 	}
 	return vec3(1.0);

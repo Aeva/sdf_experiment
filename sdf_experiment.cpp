@@ -314,10 +314,12 @@ StatusCode SDFExperiment::Setup()
 	AllocateRenderTargets();
 
 	Objects.reserve(ObjectsCount);
+#if USE_SCENE != SCENE_TRANSLUCENTS
 	Objects.push_back(ShapeInfo(SHAPE_ORIGIN, vec3(1.0), TRAN(0.0, 0.0, 0.0), true));
 	Objects.push_back(ShapeInfo(SHAPE_X_AXIS, vec3(1.0), TRAN(3.0, 0.0, 0.0), true));
 	Objects.push_back(ShapeInfo(SHAPE_Y_AXIS, vec3(1.0), TRAN(0.0, 3.0, 0.0), true));
 	Objects.push_back(ShapeInfo(SHAPE_Z_AXIS, vec3(1.0), TRAN(0.0, 0.0, 3.0), true));
+#endif
 
 #if USE_SCENE == SCENE_RANDOM_FOREST
 	const double OffsetX = -double(FloorWidth) * 2.0 + 20.5;
@@ -386,6 +388,12 @@ StatusCode SDFExperiment::Setup()
 		bToggle = !bToggle;
 	}
 
+#elif USE_SCENE == SCENE_TRANSLUCENTS
+	Objects.push_back(ShapeInfo(SHAPE_WHITE_SLAB, vec3(7.0, 7.0, 0.1), TRAN(0.0, 0.0, 0.0), false));
+	Objects.push_back(ShapeInfo(SHAPE_CYAN_SLAB, vec3(2.0, 0.25, 2.0), TRAN(1.3, -1.5, 2.0), true));
+	Objects.push_back(ShapeInfo(SHAPE_YELLOW_SLAB, vec3(2.0, 0.25, 2.0), TRAN(0.0, 0.0, 2.0), true));
+	Objects.push_back(ShapeInfo(SHAPE_MAGENTA_SLAB, vec3(2.0, 0.25, 2.0), TRAN(-1.3, 1.5, 2.0), true));
+
 
 #endif // USE_SCENE
 
@@ -411,7 +419,7 @@ void SDFExperiment::Render(const int FrameCounter)
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	double Time = glfwGetTime();
 
-#if ENABLE_HOVERING_SHAPES
+#if ENABLE_HOVERING_SHAPES && USE_SCENE != SCENE_TRANSLUCENTS
 	{
 		double Hover = (sin(Time * 2.0) + 1.0) / 2.5;
 		Tangerine->LocalToWorld = TRAN(3.0, 0.0, Hover) * ROTZ(Time * 2.0);

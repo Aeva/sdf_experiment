@@ -70,7 +70,11 @@ ColorSDF SceneColor(vec4 ShapeParams, vec3 Local)
 bool ShapeIsTransmissive(vec4 ShapeParams)
 {
 	const int ShapeFn = int(ShapeParams.w);
-	return ShapeFn == SHAPE_X_AXIS;
+	return \
+		ShapeFn == SHAPE_X_AXIS || \
+		ShapeFn == SHAPE_CYAN_SLAB || \
+		ShapeFn == SHAPE_YELLOW_SLAB || \
+		ShapeFn == SHAPE_MAGENTA_SLAB;
 }
 
 
@@ -86,5 +90,9 @@ int SceneTransmission(vec4 ShapeParams, vec3 Local)
 	else if (ShapeFn == SHAPE_X_AXIS)
 	{
 		return TangerineTransmission(Local);
+	}
+	else if (ShapeFn == SHAPE_CYAN_SLAB || ShapeFn == SHAPE_YELLOW_SLAB || ShapeFn == SHAPE_MAGENTA_SLAB)
+	{
+		return 0;
 	}
 }

@@ -14,6 +14,10 @@
 #define SHAPE_GRASS_CUBE_2 102
 #define SHAPE_WATER_CUBE_1 103
 #define SHAPE_WATER_CUBE_2 104
+#define SHAPE_WHITE_SLAB 105
+#define SHAPE_CYAN_SLAB 106
+#define SHAPE_YELLOW_SLAB 107
+#define SHAPE_MAGENTA_SLAB 108
 
 // --------------------
 // PAINT FUNCTION NAMES
@@ -44,6 +48,7 @@
 
 #define SCENE_RANDOM_FOREST 1
 #define SCENE_HEIGHTMAP 2
+#define SCENE_TRANSLUCENTS 3
 #define USE_SCENE SCENE_RANDOM_FOREST
 
 #define ENABLE_CUBETRACE 1
@@ -65,5 +70,13 @@ const int MaxIterations = 100;
 const int CoarserMaxIterations = 20;
 const float AlmostZero = 0.001;
 
+#if USE_SCENE == SCENE_TRANSLUCENTS
+
+#define SUN_DIR vec3(-0.4, -1.0, 1.2)
+
+#else
+
 #define SUN_DIR vec3(1.0, 1.0, 3.0)
 //#define SUN_DIR vec3(-0.3, 0.3, 2.0)
+
+#endif // USE_SCENE
