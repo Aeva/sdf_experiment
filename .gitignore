@@ -5,3 +5,5 @@ windows/x64
 windows/.vs
 sdf_experiment
 __pycache__/
+frames/output.mp4
+frames/raw_data
