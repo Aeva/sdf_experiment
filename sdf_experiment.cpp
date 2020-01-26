@@ -7,6 +7,10 @@
 #include <cstdlib>
 #include <iostream>
 
+#if VINE_MODE
+#include <stdio.h>
+#endif
+
 #if PROFILING
 #include "glue/logging.h"
 #endif //PROFILING
@@ -27,6 +31,13 @@ GLuint ObjectIdBuffer;
 
 GLuint GloomPass;
 GLuint GloomBuffer;
+
+#if VINE_MODE
+GLuint ColorPass;
+GLuint ColorBuffer;
+#else
+const GLuint ColorPass = 0;
+#endif
 
 #if ENABLE_RESOLUTION_SCALING
 const float ResolutionScale = 0.5;
@@ -147,6 +158,12 @@ GLint GetQueryValue(GLuint Id, GLenum Param)
 
 void UpdateScreenInfo(bool bResolutionScaling)
 {
+#if VINE_MODE
+	const float ScreenWidth = VineModeWidth;
+	const float ScreenHeight = VineModeHeight;
+	const float ScaleX = 1.0;
+	const float ScaleY = 1.0;
+#else
 	float ScreenWidth;
 	float ScreenHeight;
 	GetScreenSize(&ScreenWidth, &ScreenHeight);
@@ -160,6 +177,7 @@ void UpdateScreenInfo(bool bResolutionScaling)
 	float ScaleX;
 	float ScaleY;
 	GetDPIScale(&ScaleX, &ScaleY);
+#endif
 	GLfloat BufferData[8] = {
 		ScreenWidth,
 		ScreenHeight,
@@ -230,6 +248,10 @@ StatusCode ReadMapData()
 
 void AllocateRenderTargets(bool bErase=false)
 {
+#if VINE_MODE
+	const float ScreenWidth = VineModeWidth;
+	const float ScreenHeight = VineModeHeight;
+#else
 	float ScreenWidth;
 	float ScreenHeight;
 	GetScreenSize(&ScreenWidth, &ScreenHeight);
@@ -237,14 +259,21 @@ void AllocateRenderTargets(bool bErase=false)
 	ScreenWidth = ceil(ScreenWidth * ResolutionScale);
 	ScreenHeight = ceil(ScreenHeight * ResolutionScale);
 #endif //ENABLE_RESOLUTION_SCALING
+#endif
 
 	if (bErase)
 	{
 		glDeleteFramebuffers(1, &DepthPass);
 		glDeleteFramebuffers(1, &GloomPass);
+#if VINE_MODE
+		glDeleteFramebuffers(1, &ColorPass);
+#endif
 		glDeleteTextures(1, &DepthBuffer);
 		glDeleteTextures(1, &ObjectIdBuffer);
 		glDeleteTextures(1, &GloomBuffer);
+#if VINE_MODE
+		glDeleteTextures(1, &ColorBuffer);
+#endif
 	}
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &DepthBuffer);
@@ -275,6 +304,18 @@ void AllocateRenderTargets(bool bErase=false)
 	glCreateFramebuffers(1, &GloomPass);
 	glNamedFramebufferTexture(GloomPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
 	glNamedFramebufferTexture(GloomPass, GL_COLOR_ATTACHMENT0, GloomBuffer, 0);
+
+#if VINE_MODE
+	glCreateTextures(GL_TEXTURE_2D, 1, &ColorBuffer);
+	glTextureStorage2D(ColorBuffer, 1, GL_RGB8, int(ScreenWidth), int(ScreenHeight));
+	glTextureParameteri(ColorBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(ColorBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTextureParameteri(ColorBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(ColorBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glCreateFramebuffers(1, &ColorPass);
+	glNamedFramebufferTexture(ColorPass, GL_COLOR_ATTACHMENT0, ColorBuffer, 0);
+#endif
 }
 
 
@@ -416,8 +457,15 @@ void SDFExperiment::Render(const int FrameCounter)
 #if PROFILING
 	glQueryCounter(FrameStartTime, GL_TIMESTAMP);
 #endif
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+#if VINE_MODE
+	// Clear the unused backbuffer to red to make it easier to spot problems.
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClearColor(1.0, 0.0, 0.0, 1.0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	double Time = 1.0 / 30.0 * double(FrameCounter);
+#else
 	double Time = glfwGetTime();
+#endif
 
 #if ENABLE_HOVERING_SHAPES && USE_SCENE != SCENE_TRANSLUCENTS
 	{
@@ -441,6 +489,7 @@ void SDFExperiment::Render(const int FrameCounter)
 	const vec3 OriginMiddle = vec3(5.0, 5.0, 2.0);
 #if ENABLE_FIXATE_UPON_ORANGE
 	const vec3 OriginEnd = vec3(5.0, 5.0, 3.0);
+	//const vec3 OriginEnd = vec3(5.0, 5.0, 2.0);
 #else
 	const vec3 OriginEnd = vec3(10.0, 10.0, 5.0);
 #endif // ENABLE_FIXATE_UPON_ORANGE
@@ -456,9 +505,14 @@ void SDFExperiment::Render(const int FrameCounter)
 	const mat4 WorldToView = lookAt(CameraOrigin, CameraFocus, vec3(0.0, 0.0, 1.0));
 	const mat4 ViewToWorld = inverse(WorldToView);
 
+#if VINE_MODE
+	float ScreenWidth = VineModeWidth;
+	float ScreenHeight = VineModeHeight;
+#else
 	float ScreenWidth;
 	float ScreenHeight;
 	GetScreenSize(&ScreenWidth, &ScreenHeight);
+#endif
 	const float AspectRatio = ScreenWidth / ScreenHeight;
 	const mat4 ViewToClip = infinitePerspective(radians(45.f), AspectRatio, 1.0f);
 	const mat4 ClipToView = inverse(ViewToClip);
@@ -599,7 +653,7 @@ void SDFExperiment::Render(const int FrameCounter)
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, ColorPass);
 	VisibleObjectsBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
 	glBindTextureUnit(3, GloomBuffer);
 	ColorShader.Activate();
@@ -618,6 +672,20 @@ void SDFExperiment::Render(const int FrameCounter)
 	glEndQuery(GL_TIME_ELAPSED);
 #endif
 
+#if VINE_MODE
+	if (FrameCounter > -1)
+	{
+		std::vector<char> PixelData;
+		const size_t Channels = 4;
+		PixelData.resize(size_t(VineModeWidth) * size_t(VineModeHeight) * Channels);
+		glNamedFramebufferReadBuffer(ColorPass, GL_COLOR_ATTACHMENT0);
+		glReadPixels(0, 0, GLsizei(VineModeWidth), GLsizei(VineModeHeight), GL_RGBA, GL_UNSIGNED_BYTE, PixelData.data());
+		FILE* FileHandle;
+		FileHandle = fopen("frames/raw_data", "ab");
+		fwrite(PixelData.data(), sizeof(char), PixelData.size(), FileHandle);
+		fclose(FileHandle);
+	}
+#endif
 
 #if PROFILING
 	glQueryCounter(FrameEndTime, GL_TIMESTAMP);

@@ -3,6 +3,7 @@
 #include "errors.h"
 #include "gl_boilerplate.h"
 #include "../sdf_experiment.h"
+#include "../shaders/defs.glsl"
 #if PROFILING
 #include "logging.h"
 #endif //PROFILING
@@ -70,6 +71,9 @@ StatusCode SetupGLFW()
 #endif
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GL_TRUE); // highdpi
 
+#if VINE_MODE
+	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+#endif
 	int ScreenWidth = 512;
 	int ScreenHeight = 512;
 
@@ -168,7 +172,12 @@ StatusCode DemoSetup ()
 
 void DrawFrame()
 {
+#if VINE_MODE
+	// Start at a lower frame counter for a "burn in" frame, which is not written to disk.
+	static int FrameCounter = -2;
+#else
 	static int FrameCounter = -1;
+#endif
 	FrameCounter += 1;
 #if PROFILING
 	const int StatSamples = 50;
@@ -235,6 +244,13 @@ void DrawFrame()
 	Log::Flush();
 #endif
 	glfwPollEvents();
+
+#if VINE_MODE
+	if (FrameCounter == 30 * 6)
+	{
+		glfwTerminate();
+	}
+#endif
 }
 
 

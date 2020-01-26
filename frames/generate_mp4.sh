@@ -1,0 +1,1 @@
+ffmpeg -y -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -f rawvideo -pixel_format rgba -framerate 30 -video_size 720x1280 -i raw_data -shortest -c:a aac -r 30 -c:v libx264 -crf 8 -pix_fmt yuv420p -vf "vflip" output.mp4

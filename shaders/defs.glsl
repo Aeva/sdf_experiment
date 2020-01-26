@@ -63,6 +63,8 @@
 
 #define VISUALIZE_ALIASING_GRADIENT 0
 
+#define VINE_MODE 0
+
 // ----------------
 // COMMON CONSTANTS
 // ----------------
@@ -77,6 +79,12 @@ const float AlmostZero = 0.001;
 #else
 
 #define SUN_DIR vec3(1.0, 1.0, 3.0)
+//#define SUN_DIR vec3(0.0, 0.0, 1.0)
 //#define SUN_DIR vec3(-0.3, 0.3, 2.0)
 
 #endif // USE_SCENE
+
+#ifdef VINE_MODE
+const float VineModeWidth = 720.0;
+const float VineModeHeight = 1280.0;
+#endif
