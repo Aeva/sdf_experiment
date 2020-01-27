@@ -9,7 +9,7 @@
 
 #if VINE_MODE
 #include <stdio.h>
-#endif
+#endif // VINE_MODE
 
 #if PROFILING
 #include "glue/logging.h"
@@ -37,7 +37,7 @@ GLuint ColorPass;
 GLuint ColorBuffer;
 #else
 const GLuint ColorPass = 0;
-#endif
+#endif // VINE_MODE
 
 #if ENABLE_RESOLUTION_SCALING
 const float ResolutionScale = 0.5;
@@ -177,7 +177,7 @@ void UpdateScreenInfo(bool bResolutionScaling)
 	float ScaleX;
 	float ScaleY;
 	GetDPIScale(&ScaleX, &ScaleY);
-#endif
+#endif // VINE_MODE
 	GLfloat BufferData[8] = {
 		ScreenWidth,
 		ScreenHeight,
@@ -259,7 +259,7 @@ void AllocateRenderTargets(bool bErase=false)
 	ScreenWidth = ceil(ScreenWidth * ResolutionScale);
 	ScreenHeight = ceil(ScreenHeight * ResolutionScale);
 #endif //ENABLE_RESOLUTION_SCALING
-#endif
+#endif // VINE_MODE
 
 	if (bErase)
 	{
@@ -267,13 +267,13 @@ void AllocateRenderTargets(bool bErase=false)
 		glDeleteFramebuffers(1, &GloomPass);
 #if VINE_MODE
 		glDeleteFramebuffers(1, &ColorPass);
-#endif
+#endif // VINE_MODE
 		glDeleteTextures(1, &DepthBuffer);
 		glDeleteTextures(1, &ObjectIdBuffer);
 		glDeleteTextures(1, &GloomBuffer);
 #if VINE_MODE
 		glDeleteTextures(1, &ColorBuffer);
-#endif
+#endif // VINE_MODE
 	}
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &DepthBuffer);
@@ -315,7 +315,7 @@ void AllocateRenderTargets(bool bErase=false)
 
 	glCreateFramebuffers(1, &ColorPass);
 	glNamedFramebufferTexture(ColorPass, GL_COLOR_ATTACHMENT0, ColorBuffer, 0);
-#endif
+#endif // VINE_MODE
 }
 
 
@@ -462,10 +462,10 @@ void SDFExperiment::Render(const int FrameCounter)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClearColor(1.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
-	double Time = 1.0 / 30.0 * double(FrameCounter);
+	double Time = 1.0 / double(VINE_FPS) * double(FrameCounter);
 #else
 	double Time = glfwGetTime();
-#endif
+#endif // VINE_MODE
 
 #if ENABLE_HOVERING_SHAPES && USE_SCENE != SCENE_TRANSLUCENTS
 	{
@@ -485,17 +485,21 @@ void SDFExperiment::Render(const int FrameCounter)
 	}
 #endif
 
-	const vec3 OriginStart = vec3(15.0, 0.0, 2.0);
-	const vec3 OriginMiddle = vec3(5.0, 5.0, 2.0);
 #if ENABLE_FIXATE_UPON_ORANGE
-	const vec3 OriginEnd = vec3(5.0, 5.0, 3.0);
-	//const vec3 OriginEnd = vec3(5.0, 5.0, 2.0);
+	const vec3 OriginEnd = vec3(5.0, 5.0, 2.0);
 #else
 	const vec3 OriginEnd = vec3(10.0, 10.0, 5.0);
 #endif // ENABLE_FIXATE_UPON_ORANGE
-	const float Alpha = min(Time / 5.0, 1.0);
 
+#if ENABLE_FLY_IN
+	const vec3 OriginStart = vec3(15.0, 0.0, 2.0);
+	const vec3 OriginMiddle = vec3(5.0, 5.0, 2.0);
+	const float Alpha = min(Time / 5.0, 1.0);
 	const vec3 CameraOrigin = mix(mix(OriginStart, OriginMiddle, Alpha), mix(OriginMiddle, OriginEnd, Alpha), Alpha);
+#else
+	const vec3 CameraOrigin = OriginEnd;
+#endif // ENABLE_FLY_IN
+
 #if ENABLE_FIXATE_UPON_ORANGE
 	const vec3 CameraFocus = vec3(3.0, 0.0, 0.5);
 #else
@@ -512,7 +516,7 @@ void SDFExperiment::Render(const int FrameCounter)
 	float ScreenWidth;
 	float ScreenHeight;
 	GetScreenSize(&ScreenWidth, &ScreenHeight);
-#endif
+#endif // VINE_MODE
 	const float AspectRatio = ScreenWidth / ScreenHeight;
 	const mat4 ViewToClip = infinitePerspective(radians(45.f), AspectRatio, 1.0f);
 	const mat4 ClipToView = inverse(ViewToClip);
@@ -685,7 +689,7 @@ void SDFExperiment::Render(const int FrameCounter)
 		fwrite(PixelData.data(), sizeof(char), PixelData.size(), FileHandle);
 		fclose(FileHandle);
 	}
-#endif
+#endif // VINE_MODE
 
 #if PROFILING
 	glQueryCounter(FrameEndTime, GL_TIMESTAMP);

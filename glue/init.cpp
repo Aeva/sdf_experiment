@@ -73,7 +73,7 @@ StatusCode SetupGLFW()
 
 #if VINE_MODE
 	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-#endif
+#endif // VINE_MODE
 	int ScreenWidth = 512;
 	int ScreenHeight = 512;
 
@@ -177,7 +177,7 @@ void DrawFrame()
 	static int FrameCounter = -2;
 #else
 	static int FrameCounter = -1;
-#endif
+#endif // VINE_MODE
 	FrameCounter += 1;
 #if PROFILING
 	const int StatSamples = 50;
@@ -246,11 +246,11 @@ void DrawFrame()
 	glfwPollEvents();
 
 #if VINE_MODE
-	if (FrameCounter == 30 * 6)
+	if (FrameCounter == VINE_FPS * 6)
 	{
 		glfwTerminate();
 	}
-#endif
+#endif // VINE_MODE
 }
 
 

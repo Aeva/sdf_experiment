@@ -59,11 +59,11 @@
 #define ENABLE_SELF_SHADOWING 1
 #define ENABLE_LIGHT_TRANSMISSION 1
 
+#define ENABLE_FLY_IN 1
 #define ENABLE_FIXATE_UPON_ORANGE 0
+#define VINE_MODE 0
 
 #define VISUALIZE_ALIASING_GRADIENT 0
-
-#define VINE_MODE 0
 
 // ----------------
 // COMMON CONSTANTS
@@ -85,6 +85,7 @@ const float AlmostZero = 0.001;
 #endif // USE_SCENE
 
 #ifdef VINE_MODE
+#define VINE_FPS 30
 const float VineModeWidth = 720.0;
 const float VineModeHeight = 1280.0;
 #endif
