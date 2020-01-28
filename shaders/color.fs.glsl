@@ -46,7 +46,7 @@ void Reconstitute(out vec3 Position, out int ObjectId)
 }
 
 
-void main ()
+void main()
 {
 	vec3 Position;
 	int ObjectId;

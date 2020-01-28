@@ -48,39 +48,63 @@ vec3 PaintAxis(const ColorSDF Shape)
 }
 
 
-vec3 Illuminate(const vec3 BaseColor, const vec3 Point, const vec3 WorldNormal, const TRANSMISSION_TYPE Transmission)
+vec3 Illuminate(const vec3 BaseColor, const vec3 WorldPosition, const vec3 WorldNormal, const TRANSMISSION_TYPE Transmission, bool bIsTransmissive)
 {
-#if 1
-	// Sun Light
-	const vec3 LightPosition = normalize(-SUN_DIR);
-	const float CosAngle = dot(LightPosition, WorldNormal);
-#if ENABLE_LIGHT_TRANSMISSION
-	const float CombinedTransmission = Transmission.x + Transmission.y + Transmission.z;
-	if (CombinedTransmission == 3.0)
+	const vec3 ShadowColor = BaseColor * 0.5;
+
+#if VISUALIZE_NORMAL_LENGTH
+	const float Magnitude = length(WorldNormal);
+	if (Magnitude >= 1.0 - AlmostZero && Magnitude <= 1.0 + AlmostZero)
 	{
-		return BaseColor * max(-CosAngle * Transmission, 0.5);
+		return vec3(1.0);
+	}
+	else if (Magnitude != Magnitude)
+	{
+		return vec3(1.0, 0.0, 0.0);
+	}
+	else if (isinf(Magnitude))
+	{
+		return vec3(0.0, 0.0, 1.0);
 	}
 	else
 	{
-		return BaseColor * max(abs(CosAngle) * Transmission, 0.5);
+		return vec3(0.0, 1.0, 0.0);
 	}
-#else
-	return BaseColor * max(-CosAngle * Transmission, 0.5);
+#endif // VISUALIZE_NORMAL_LENGTH
+
+	// Sun Light
+	const vec3 LightRay = normalize(SUN_DIR);
+	const float CosAngleToLight = dot(LightRay, WorldNormal);
+	vec3 LightAlpha = vec3(0.0, 0.0, 0.0);
+
+#if ENABLE_LIGHT_TRANSMISSION
+	if (CosAngleToLight <= 0 && bIsTransmissive)
+	{
+		LightAlpha = Transmission * abs(CosAngleToLight);
+	}
+	else
 #endif // ENABLE_LIGHT_TRANSMISSION
+	{
+		LightAlpha = vec3(Transmission * max(CosAngleToLight, 0.0));
+	}
+
+#if VISUALIZE_TRANSMISSION
+	return LightAlpha;
 #else
-	// Point Light
-	const vec3 LightPosition = vec3(0.0, 10.0, 20.0);
-	const float CosAngle = dot(normalize(Point - LightPosition), WorldNormal);
-	return BaseColor * max(-CosAngle, 0.5);
-#endif
+	return mix(ShadowColor, BaseColor, LightAlpha);
+#endif // VISUALIZE_TRANSMISSION
 }
 
 
 vec3 PaintCube(ObjectInfo Object, vec3 WorldPosition, const TRANSMISSION_TYPE Transmission)
 {
 	int ShapeFn = int(Object.ShapeParams.w);
+	const bool bIsTransmissive = ShapeIsTransmissive(Object.ShapeParams);
 	const vec3 LocalPosition = Transform3(Object.WorldToLocal, WorldPosition);
 	const vec3 WorldNormal = CubeWorldNormal(Object, LocalPosition);
+#if VISUALIZE_NORMAL
+	return WorldNormal * 0.5 + 0.5;
+#else
 	vec3 Color = vec3(0.0);
 
 	if (ShapeFn == SHAPE_GRASS_CUBE_1)
@@ -119,7 +143,8 @@ vec3 PaintCube(ObjectInfo Object, vec3 WorldPosition, const TRANSMISSION_TYPE Tr
 	{
 		return vec3(1.0, 0.0, 0.0);
 	}
-	return Illuminate(Color, WorldPosition, WorldNormal, Transmission);
+	return Illuminate(Color, WorldPosition, WorldNormal, Transmission, bIsTransmissive);
+#endif // VISUALIZE_NORMAL
 }
 
 
@@ -131,6 +156,7 @@ vec3 Paint(ObjectInfo Object, vec3 Point, const TRANSMISSION_TYPE Transmission)
 	{
 		return PaintCube(Object, Point, Transmission);
 	}
+	const bool bIsTransmissive = ShapeIsTransmissive(Object.ShapeParams);
 	
 	ColorSDF Shape = SceneColor(Object.ShapeParams, Transform3(Object.WorldToLocal, Point));
 
@@ -138,6 +164,9 @@ vec3 Paint(ObjectInfo Object, vec3 Point, const TRANSMISSION_TYPE Transmission)
     const vec3 UVW = Shape.Local / Shape.Extent;
 
 	const vec3 WorldNormal = WorldNormal(Object, Point);
+#if VISUALIZE_NORMAL
+	return WorldNormal * 0.5 + 0.5;
+#else
 
 	vec3 Color = vec3(0.0);
 
@@ -184,5 +213,6 @@ vec3 Paint(ObjectInfo Object, vec3 Point, const TRANSMISSION_TYPE Transmission)
         return vec3(1.0, 0.0, 0.0);
     }
 
-	return Illuminate(Color, Point, WorldNormal, Transmission);
+	return Illuminate(Color, Point, WorldNormal, Transmission, bIsTransmissive);
+#endif // VISUALIZE_NORMAL
 }

@@ -214,7 +214,7 @@ vec3 TransmissiveSearch(ObjectInfo Object, const RayData Ray)
 	if (Distance >= 0.0)
 #endif // ENABLE_CUBETRACE
 	{
-		float Forward = 0.1;
+		float Forward = 0.0;
 		float Backward = length(Ray.LocalStart) + length(Object.ShapeParams.xyz);
 		for (int Step = 0; Step <= CoarserMaxIterations; ++Step)
 		{

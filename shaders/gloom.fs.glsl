@@ -47,15 +47,16 @@ void Reconstitute(out vec3 Position, out int ObjectId)
 }
 
 
-RayData GetOcclusionRay(const vec3 WorldRayStart, const vec3 WorldRayDir)
+RayData GetOcclusionRay(vec3 WorldRayStart, const vec3 WorldRayDir)
 {
+	WorldRayStart += WorldRayDir * AlmostZero * 2.0;
 	const vec3 LocalRayStart = Transform3(ShadowCaster.WorldToLocal, WorldRayStart);
 	const vec3 LocalRayDir = normalize(Transform3(ShadowCaster.WorldToLocal, WorldRayStart + WorldRayDir) - LocalRayStart);
 	return RayData(WorldRayDir, WorldRayStart, LocalRayDir, LocalRayStart);
 }
 
 
-void main ()
+void main()
 {
 	vec3 Position;
 	int ObjectId;

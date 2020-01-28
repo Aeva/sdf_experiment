@@ -63,7 +63,10 @@
 #define ENABLE_FIXATE_UPON_ORANGE 0
 #define VINE_MODE 0
 
+#define VISUALIZE_NORMAL 0
+#define VISUALIZE_NORMAL_LENGTH 0
 #define VISUALIZE_ALIASING_GRADIENT 0
+#define VISUALIZE_TRANSMISSION 0
 
 // ----------------
 // COMMON CONSTANTS
@@ -74,7 +77,7 @@ const float AlmostZero = 0.001;
 
 #if USE_SCENE == SCENE_TRANSLUCENTS
 
-#define SUN_DIR vec3(-0.4, -1.0, 1.2)
+#define SUN_DIR vec3(-0.1, -1.0, 1.2)
 
 #else
 
