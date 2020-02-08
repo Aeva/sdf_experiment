@@ -71,6 +71,10 @@ StatusCode SetupGLFW()
 #endif
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GL_TRUE); // highdpi
 
+	glfwWindowHint(GLFW_ALPHA_BITS, GLFW_DONT_CARE);
+	glfwWindowHint(GLFW_DEPTH_BITS, GLFW_DONT_CARE);
+	glfwWindowHint(GLFW_STENCIL_BITS, GLFW_DONT_CARE);
+
 #if VINE_MODE
 	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 #endif // VINE_MODE

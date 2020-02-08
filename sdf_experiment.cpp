@@ -282,6 +282,7 @@ void AllocateRenderTargets(bool bErase=false)
 	glTextureParameteri(DepthBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureParameteri(DepthBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(DepthBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glObjectLabel(GL_TEXTURE, DepthBuffer, -1, "DepthBuffer");
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &ObjectIdBuffer);
 	glTextureStorage2D(ObjectIdBuffer, 1, GL_R32I, int(ScreenWidth), int(ScreenHeight));
@@ -289,10 +290,12 @@ void AllocateRenderTargets(bool bErase=false)
 	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glObjectLabel(GL_TEXTURE, ObjectIdBuffer, -1, "ObjectIdBuffer");
 
 	glCreateFramebuffers(1, &DepthPass);
 	glNamedFramebufferTexture(DepthPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
 	glNamedFramebufferTexture(DepthPass, GL_COLOR_ATTACHMENT0, ObjectIdBuffer, 0);
+	glObjectLabel(GL_FRAMEBUFFER, DepthPass, -1, "DepthPass");
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &GloomBuffer);
 	glTextureStorage2D(GloomBuffer, 1, GLOOM_BUFFER_FORMAT, int(ScreenWidth), int(ScreenHeight));
@@ -300,10 +303,12 @@ void AllocateRenderTargets(bool bErase=false)
 	glTextureParameteri(GloomBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureParameteri(GloomBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(GloomBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glObjectLabel(GL_TEXTURE, GloomBuffer, -1, "GloomBuffer");
 
 	glCreateFramebuffers(1, &GloomPass);
 	glNamedFramebufferTexture(GloomPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
 	glNamedFramebufferTexture(GloomPass, GL_COLOR_ATTACHMENT0, GloomBuffer, 0);
+	glObjectLabel(GL_FRAMEBUFFER, GloomPass, -1, "GloomPass");
 
 #if VINE_MODE
 	glCreateTextures(GL_TEXTURE_2D, 1, &ColorBuffer);
@@ -312,9 +317,11 @@ void AllocateRenderTargets(bool bErase=false)
 	glTextureParameteri(ColorBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureParameteri(ColorBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(ColorBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glObjectLabel(GL_TEXTURE, ColorBuffer, -1, "ColorBuffer");
 
 	glCreateFramebuffers(1, &ColorPass);
 	glNamedFramebufferTexture(ColorPass, GL_COLOR_ATTACHMENT0, ColorBuffer, 0);
+	glObjectLabel(GL_FRAMEBUFFER, ColorPass, -1, "ColorPass");
 #endif // VINE_MODE
 }
 
@@ -323,15 +330,18 @@ StatusCode SDFExperiment::Setup()
 {
 	RETURN_ON_FAIL(DepthShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/depth.vs.glsl"},
-		 {GL_FRAGMENT_SHADER, "shaders/depth.fs.glsl"} }));
+		 {GL_FRAGMENT_SHADER, "shaders/depth.fs.glsl"} },
+		"Depth"));
 
 	RETURN_ON_FAIL(GloomShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/gloom.vs.glsl"},
-		 {GL_FRAGMENT_SHADER, "shaders/gloom.fs.glsl"} }));
+		 {GL_FRAGMENT_SHADER, "shaders/gloom.fs.glsl"} },
+		"Gloom"));
 
 	RETURN_ON_FAIL(ColorShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/color.vs.glsl"},
-		 {GL_FRAGMENT_SHADER, "shaders/color.fs.glsl"} }));
+		 {GL_FRAGMENT_SHADER, "shaders/color.fs.glsl"} },
+		"Color"));
 
 	// cheese opengl into letting us draw triangles without any data
 	GLuint vao;
@@ -532,6 +542,7 @@ void SDFExperiment::Render(const int FrameCounter)
 		ViewInfo.Upload((void*)&BufferData, sizeof(BufferData));
 	}
 
+	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Depth");
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
@@ -627,7 +638,9 @@ void SDFExperiment::Render(const int FrameCounter)
 		glEndQuery(GL_TIME_ELAPSED);
 #endif
 	}
+	glPopDebugGroup();
 
+	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Gloom");
 	glDepthMask(GL_FALSE);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
@@ -653,7 +666,9 @@ void SDFExperiment::Render(const int FrameCounter)
 		glEndQuery(GL_TIME_ELAPSED);
 #endif
 	}
+	glPopDebugGroup();
 
+	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Color");
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
@@ -675,6 +690,7 @@ void SDFExperiment::Render(const int FrameCounter)
 #if PROFILING
 	glEndQuery(GL_TIME_ELAPSED);
 #endif
+	glPopDebugGroup();
 
 #if VINE_MODE
 	if (FrameCounter > -1)

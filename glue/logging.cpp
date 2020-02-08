@@ -63,7 +63,8 @@ StatusCode TextRendering::Setup()
 {
 	RETURN_ON_FAIL(TextShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/text.vs.glsl"},
-		 {GL_FRAGMENT_SHADER, "shaders/text.fs.glsl"} }));
+		 {GL_FRAGMENT_SHADER, "shaders/text.fs.glsl"} },
+		"Text"));
 
 	std::vector<unsigned char> ImageData;
 	unsigned ImageWidth;
@@ -97,6 +98,7 @@ StatusCode TextRendering::Setup()
 
 void TextRendering::Render(const int FrameCounter)
 {
+	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Text Overlay");
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glEnable(GL_BLEND);
 	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
@@ -110,6 +112,7 @@ void TextRendering::Render(const int FrameCounter)
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 	}
 	glDisable(GL_BLEND);
+	glPopDebugGroup();
 }
 
 

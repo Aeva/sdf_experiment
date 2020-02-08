@@ -238,6 +238,14 @@ StatusCode CompileShader(GLenum ShaderType, std::string Path, GLuint& ProgramID)
 		Strings.push_back(Sources[i].c_str());
 	}
 	ProgramID = glCreateShaderProgramv(ShaderType, Count, Strings.data());
+	{
+		const size_t Start = Path.find_last_of("/") + 1;
+		const size_t End = Path.find_last_of(".");
+		const size_t Span = End > Start ? End - Start : -1;
+		std::string ProgramName = Path.substr(Start, Span);
+		glObjectLabel(GL_PROGRAM, ProgramID, -1, ProgramName.c_str());
+	}
+
 	GLint LinkStatus;
 	glGetProgramiv(ProgramID, GL_LINK_STATUS, &LinkStatus);
 	if (!LinkStatus)
@@ -271,9 +279,10 @@ GLuint ShaderModeBit(GLenum ShaderMode)
 }
 
 
-StatusCode ShaderPipeline::Setup(std::map<GLenum, std::string> Shaders)
+StatusCode ShaderPipeline::Setup(std::map<GLenum, std::string> Shaders, const char* PipelineName)
 {
-	glGenProgramPipelines(1, &PipelineID);
+	glCreateProgramPipelines(1, &PipelineID);
+	glObjectLabel(GL_PROGRAM_PIPELINE, PipelineID, -1, PipelineName);
 	for (const auto& Shader : Shaders)
 	{
 		RETURN_ON_FAIL(CompileShader(Shader.first, Shader.second, Stages[Shader.first]));

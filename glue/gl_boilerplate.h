@@ -28,7 +28,7 @@ struct ShaderPipeline
 	std::map<GLenum, GLuint> Stages;
 	std::vector<struct BindingPoint*> BindingPoints;
 
-	StatusCode Setup(std::map<GLenum, std::string> Shaders);
+	StatusCode Setup(std::map<GLenum, std::string> Shaders, const char* PipelineName);
 	void Activate();
 };
 
