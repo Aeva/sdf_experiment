@@ -307,61 +307,54 @@ void ShaderPipeline::Activate()
 }
 
 
-void Buffer::Initialize(size_t Bytes)
+Buffer::Buffer(const char* InDebugName)
+	: BufferID(0)
+	, LastSize(0)
+	, DebugName(InDebugName)
 {
-	if (BufferID == 0)
+}
+
+
+Buffer::~Buffer()
+{
+	Release();
+}
+
+
+inline void Buffer::Release()
+{
+	if (BufferID != 0)
 	{
-		glCreateBuffers(1, &BufferID);
-		glNamedBufferStorage(BufferID, Bytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+		glDeleteBuffers(1, &BufferID);
+		BufferID = 0;
 	}
 }
 
 
 void Buffer::Upload(void* Data, size_t Bytes)
 {
+	if (Bytes != LastSize)
+	{
+		Release();
+	}
 	if (BufferID == 0)
 	{
-		Initialize(Bytes);
+		glCreateBuffers(1, &BufferID);
+		if (DebugName != nullptr)
+		{
+			glObjectLabel(GL_BUFFER, BufferID, -1, DebugName);
+		}
+		glNamedBufferStorage(BufferID, Bytes, Data, GL_DYNAMIC_STORAGE_BIT);
+		LastSize = Bytes;
 	}
-	glNamedBufferSubData(BufferID, 0, Bytes, Data);
+	else
+	{
+		glNamedBufferSubData(BufferID, 0, Bytes, Data);
+	}
 }
 
 
 void Buffer::Bind(GLenum Target, GLuint BindingIndex)
 {
 	glBindBufferBase(Target, BindingIndex, BufferID);
-}
-
-
-BufferPool::BufferPool()
-{
-	Data.emplace_back();
-}
-
-
-void BufferPool::Reset()
-{
-	Tracker = 0;
-}
-
-
-Buffer& BufferPool::Next()
-{
-	if (Tracker == Data.size()-1)
-	{
-		Data.emplace_back();
-	}
-	return Data[Tracker++];
-}
-
-
-Buffer* BufferPool::begin()
-{
-	return Data.size() > 0 ? &Data[0] : nullptr;
-}
-
-
-Buffer* BufferPool::end()
-{
-	return Data.size() > 0 ? &Data[Tracker] : nullptr;
 }

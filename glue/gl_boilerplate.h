@@ -35,20 +35,12 @@ struct ShaderPipeline
 
 struct Buffer
 {
-	GLuint BufferID = 0;
-	void Initialize(size_t Bytes);
+	GLuint BufferID;
+	const char* DebugName;
+	size_t LastSize;
+	Buffer(const char* InDebugName = nullptr);
+	~Buffer();
+	void Release();
 	void Upload(void* Data, size_t Bytes);
 	void Bind(GLenum Target, GLuint BindingIndex);
-};
-
-
-struct BufferPool
-{
-	std::vector<Buffer> Data;
-	int Tracker;
-	BufferPool();
-	void Reset();
-	Buffer& Next();
-	Buffer* begin();
-	Buffer* end();
 };

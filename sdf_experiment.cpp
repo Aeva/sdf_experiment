@@ -20,10 +20,11 @@ using namespace glm;
 ShaderPipeline DepthShader;
 ShaderPipeline GloomShader;
 ShaderPipeline ColorShader;
-Buffer ScreenInfo;
-Buffer ViewInfo;
-Buffer VisibleObjectsBuffer;
-Buffer ShadowCastersBuffer;
+
+Buffer ScreenInfo("ScreenInfo");
+Buffer ViewInfo("ViewInfo");
+Buffer VisibleObjectsBuffer("VisibleObjectsBuffer");
+Buffer ShadowCastersBuffer("ShadowCastersBuffer");
 
 GLuint DepthPass;
 GLuint DepthBuffer;
@@ -128,12 +129,6 @@ struct TerrainInfo
 };
 
 
-const int FloorWidth = 100;
-const int FloorHeight = 100;
-const int FloorArea = FloorWidth * FloorHeight;
-const int SceneObjects = 4;
-const int Trees = 100;
-const int ObjectsCount = FloorArea + SceneObjects + Trees;
 std::vector<TerrainInfo> MapData;
 std::vector<ShapeInfo> Objects;
 ShapeInfo* Tangerine = nullptr;
@@ -193,7 +188,7 @@ void UpdateScreenInfo(bool bResolutionScaling)
 }
 
 
-StatusCode ReadMapFile(const char* FileName, std::vector<unsigned char>* ImageData)
+StatusCode ReadMapFile(const char* FileName, std::vector<unsigned char>* ImageData, const int Width, const int Height)
 {
 	unsigned ImageWidth;
 	unsigned ImageHeight;
@@ -206,7 +201,7 @@ StatusCode ReadMapFile(const char* FileName, std::vector<unsigned char>* ImageDa
 			<< " - [" << Error << "] " << lodepng_error_text(Error) << "\n";
 		return StatusCode::FAIL;
 	}
-	if (ImageWidth != FloorWidth || ImageHeight != FloorHeight)
+	if (ImageWidth != Width || ImageHeight != Height)
 	{
 		std::cout \
 			<< "Failed to read " << FileName << "!\n"
@@ -217,25 +212,26 @@ StatusCode ReadMapFile(const char* FileName, std::vector<unsigned char>* ImageDa
 }
 
 
-int MapIndex(int x, int y)
+int MapIndex(int x, int y, const int Width, const int Height)
 {
-	x = max(min(x, FloorWidth - 1), 0);
-	y = max(min(y, FloorHeight - 1), 0);
-	return FloorWidth * y + x;
+	x = max(min(x, Width - 1), 0);
+	y = max(min(y, Height - 1), 0);
+	return Width * y + x;
 }
 
 
-StatusCode ReadMapData()
+StatusCode ReadMapData(const int Width, const int Height)
 {
 	std::vector<unsigned char> HeightData;
 	std::vector<unsigned char> TerrainData;
 	const char* HeightFile = "heightmap.png";
 	const char* TerrainFile = "terrain.png";
-	RETURN_ON_FAIL(ReadMapFile(HeightFile, &HeightData));
-	RETURN_ON_FAIL(ReadMapFile(TerrainFile, &TerrainData));
+	RETURN_ON_FAIL(ReadMapFile(HeightFile, &HeightData, Width, Height));
+	RETURN_ON_FAIL(ReadMapFile(TerrainFile, &TerrainData, Width, Height));
 
-	MapData.reserve(FloorArea);
-	for (int i = 0; i < FloorArea; ++i)
+	const int Area = Width * Height;
+	MapData.reserve(Area);
+	for (int i = 0; i < Area; ++i)
 	{
 		const double Alpha = double(HeightData[i * 4]) / 255.0;
 		const double Height = mix(-3.5, 5.0, Alpha);
@@ -364,13 +360,19 @@ StatusCode SDFExperiment::Setup()
 
 	AllocateRenderTargets();
 
-	Objects.reserve(ObjectsCount);
+	Objects.reserve(0);
 #if USE_SCENE != SCENE_TRANSLUCENTS
 	Objects.push_back(ShapeInfo(SHAPE_ORIGIN, vec3(1.0), TRAN(0.0, 0.0, 0.0), true));
 	Objects.push_back(ShapeInfo(SHAPE_X_AXIS, vec3(1.0), TRAN(3.0, 0.0, 0.0), true));
 	Objects.push_back(ShapeInfo(SHAPE_Y_AXIS, vec3(1.0), TRAN(0.0, 3.0, 0.0), true));
 	Objects.push_back(ShapeInfo(SHAPE_Z_AXIS, vec3(1.0), TRAN(0.0, 0.0, 3.0), true));
 #endif
+
+	const int FloorWidth = 100;
+	const int FloorHeight = 100;
+	const int FloorArea = FloorWidth * FloorHeight;
+	const int SceneObjects = 4;
+	const int Trees = 100;
 
 #if USE_SCENE == SCENE_RANDOM_FOREST
 	const double OffsetX = -double(FloorWidth) * 2.0 + 20.5;
@@ -416,7 +418,7 @@ StatusCode SDFExperiment::Setup()
 	}
 
 #elif USE_SCENE == SCENE_HEIGHTMAP
-	RETURN_ON_FAIL(ReadMapData());
+	RETURN_ON_FAIL(ReadMapData(FloorWidth, FloorHeight));
 	bool bToggle = false;
 	const double WorldOffsetX = -double(FloorWidth) * 0.5;
 	const double WorldOffsetY = -double(FloorHeight) * 0.5;
@@ -424,7 +426,7 @@ StatusCode SDFExperiment::Setup()
 	{
 		for (int x = 0; x < FloorWidth; ++x)
 		{
-			const TerrainInfo Terrain = MapData[MapIndex(x, y)];
+			const TerrainInfo Terrain = MapData[MapIndex(x, y, FloorWidth, FloorHeight)];
 			const bool bIsRiver = false;
 
 			const double WorldX = double(x) + WorldOffsetX;
@@ -551,14 +553,12 @@ void SDFExperiment::Render(const int FrameCounter)
 	glBindTextureUnit(2, 0);
 	DepthShader.Activate();
 	glClear(GL_DEPTH_BUFFER_BIT);
-	VisibleObjectsBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
-	ScreenInfo.Bind(GL_UNIFORM_BUFFER, 1);
-	ViewInfo.Bind(GL_UNIFORM_BUFFER, 2);
 	UpdateScreenInfo(true);
 
 	// Update the information for all objects.
 	std::vector<ShapeUploadInfo> VisibleObjects;
 	std::vector<ShapeUploadInfo> ShadowCasters;
+	const size_t ObjectsCount = Objects.size();
 	VisibleObjects.reserve(ObjectsCount);
 	ShadowCasters.reserve(ObjectsCount);
 	for (int i = 0; i < ObjectsCount; ++i)
@@ -624,8 +624,12 @@ void SDFExperiment::Render(const int FrameCounter)
 	const int VisibleObjectsCount = VisibleObjects.size();
 	const int ShadowCastersCount = ShadowCasters.size();
 
-	VisibleObjectsBuffer.Upload((void*)VisibleObjects.data(), sizeof(ShapeUploadInfo) * ObjectsCount);
-	ShadowCastersBuffer.Upload((void*)ShadowCasters.data(), sizeof(ShapeUploadInfo) * ObjectsCount);
+	VisibleObjectsBuffer.Upload((void*)VisibleObjects.data(), sizeof(ShapeUploadInfo) * VisibleObjectsCount);
+	ShadowCastersBuffer.Upload((void*)ShadowCasters.data(), sizeof(ShapeUploadInfo) * ShadowCastersCount);
+
+	VisibleObjectsBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
+	ScreenInfo.Bind(GL_UNIFORM_BUFFER, 1);
+	ViewInfo.Bind(GL_UNIFORM_BUFFER, 2);
 
 	// Draw all of the everything
 	if (VisibleObjectsCount > 0)
@@ -680,6 +684,7 @@ void SDFExperiment::Render(const int FrameCounter)
 	if (ResolutionScale < 1.0)
 	{
 		UpdateScreenInfo(false);
+		ScreenInfo.Bind(GL_UNIFORM_BUFFER, 1);
 	}
 #endif //ENABLE_RESOLUTION_SCALING
 
