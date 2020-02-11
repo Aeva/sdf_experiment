@@ -7,14 +7,14 @@ prepend: shaders/paint.glsl
 prepend: shaders/raymarch.glsl
 --------------------------------------------------------------------------------
 
-layout(location = 0) out vec4 OutColor;
+layout(location = 0) out vec3 OutNormal;
+layout(location = 1) out vec4 OutColor;
 layout(std430, binding = 0) readonly buffer ObjectsBlock
 {
 	ObjectInfo Objects[];
 };
 layout(binding = 1) uniform sampler2D DepthBuffer;
 layout(binding = 2) uniform isampler2D ObjectIdBuffer;
-layout(binding = 3) uniform sampler2D GloomBuffer;
 
 
 vec3 GetRayDir()
@@ -54,61 +54,24 @@ void main()
 
 	if (ObjectId == -1)
 	{
-		OutColor = vec4(0.729, 0.861, 0.951, 1.0);
+		OutNormal = vec3(0.0, 0.0, 0.0);
+		OutColor = vec4(0.0, 0.0, 0.0, 0.0);
 	}
 	else
 	{
-#if VISUALIZE_ALIASING_GRADIENT
-		OutColor = vec4(0.0, 1.0, 0.0, 1.0);
-		const float Scale = 10.0;
-		if (dFdx(gl_FragCoord.x) == 1.0)
+		const ObjectInfo Object = Objects[ObjectId];
+		const int ShapeFn = int(Object.ShapeParams.w);
+		OutColor.a = float(ShapeIsTransmissive(Object.ShapeParams));
+		if (ShapeFn > CUBE_TRACEABLES)
 		{
-			OutColor.g -= 0.5;
-			OutColor.r = length(dFdx(Position)) * Scale;
+			const vec3 LocalPosition = Transform3(Object.WorldToLocal, Position);
+			OutNormal = CubeWorldNormal(Object, LocalPosition);
+			OutColor.rgb = PaintCube(Object, Position);
 		}
-		if (dFdy(gl_FragCoord.y) == 1.0)
+		else
 		{
-			OutColor.g -= 0.5;
-			OutColor.b = length(dFdy(Position)) * Scale;
+			OutNormal = WorldNormal(Object, Position);
+            OutColor.rgb = Paint(Object, Position);
 		}
-#else
-		const vec2 UV = gl_FragCoord.xy * ScreenSize.zw;
-#if ENABLE_LIGHT_TRANSMISSION
-		const vec3 Transmission = texture(GloomBuffer, UV).rgb;
-#else
-		const float Transmission = texture(GloomBuffer, UV).r;
-#endif // ENABLE_LIGHT_TRANSMISSION
-		ObjectInfo Object = Objects[ObjectId];
-		OutColor = vec4(Paint(Object, Position, Transmission), 1.0);
-
-#if ENABLE_ANTIALIASING
-		float Count = 1.0;
-		const float Samples = 8.0;
-		const float InvSamples = 1.0 / Samples;
-		if (dFdx(gl_FragCoord.x) == 1.0)
-		{
-			const vec3 Offset = dFdx(Position);
-			for (float i = 0.0; i < Samples; ++i)
-			{
-				const float Scale = i * InvSamples * 0.75;
-				OutColor.xyz += Paint(Object, Offset * Scale + Position, Transmission);
-				OutColor.xyz += Paint(Object, -Offset * Scale + Position, Transmission);
-			}
-			Count += Samples * 2.0;
-		}
-		if (dFdy(gl_FragCoord.y) == 1.0)
-		{
-			const vec3 Offset = dFdy(Position);
-			for (float i = 0.0; i < Samples; ++i)
-			{
-				const float Scale = i * InvSamples * 0.75;
-				OutColor.xyz += Paint(Object, Offset * Scale + Position, Transmission);
-				OutColor.xyz += Paint(Object, -Offset * Scale + Position, Transmission);
-			}
-			Count += Samples * 2.0;
-		}
-		OutColor.xyz /= Count;
-#endif // ENABLE_ANTIALIASING
-#endif // VISUALIZE_ALIASING_GRADIENT
 	}
 }

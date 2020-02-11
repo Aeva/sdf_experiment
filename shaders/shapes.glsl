@@ -2,13 +2,6 @@ prepend: shaders/objects.glsl
 --------------------------------------------------------------------------------
 
 
-#if ENABLE_LIGHT_TRANSMISSION
-#define TRANSMISSION_TYPE vec3
-#else
-#define TRANSMISSION_TYPE float
-#endif // ENABLE_LIGHT_TRANSMISSION
-
-
 struct ColorSDF
 {
     float Distance;

@@ -105,5 +105,11 @@
     <None Include="..\shaders\gloom.vs.glsl">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\shaders\light.fs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\light.vs.glsl">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

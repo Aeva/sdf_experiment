@@ -18,8 +18,9 @@
 using namespace glm;
 
 ShaderPipeline DepthShader;
-ShaderPipeline GloomShader;
 ShaderPipeline ColorShader;
+ShaderPipeline GloomShader;
+ShaderPipeline LightShader;
 
 Buffer ScreenInfo("ScreenInfo");
 Buffer ViewInfo("ViewInfo");
@@ -143,8 +144,9 @@ ShapeInfo* Onion = nullptr;
 GLuint FrameStartTime;
 GLuint FrameEndTime;
 GLuint DepthPassTime;
-GLuint GloomPassTime;
 GLuint ColorPassTime;
+GLuint GloomPassTime;
+GLuint LightPassTime;
 GLint GetQueryValue(GLuint Id, GLenum Param)
 {
 	GLint Value = 0;
@@ -296,9 +298,11 @@ void AllocateRenderTargets(bool bErase = false)
 		glObjectLabel(GL_TEXTURE, ObjectIdBuffer, -1, "ObjectIdBuffer");
 
 		glCreateFramebuffers(1, &DepthPass);
+		glObjectLabel(GL_FRAMEBUFFER, DepthPass, -1, "DepthPass");
 		glNamedFramebufferTexture(DepthPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
 		glNamedFramebufferTexture(DepthPass, GL_COLOR_ATTACHMENT0, ObjectIdBuffer, 0);
-		glObjectLabel(GL_FRAMEBUFFER, DepthPass, -1, "DepthPass");
+		GLenum ColorAttachments[1] = { GL_COLOR_ATTACHMENT0 };
+		glNamedFramebufferDrawBuffers(DepthPass, 1, ColorAttachments);
 	}
 
 	// Color Pass
@@ -312,7 +316,7 @@ void AllocateRenderTargets(bool bErase = false)
 		glTextureParameteri(ColorBuffers[0], GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glObjectLabel(GL_TEXTURE, ColorBuffers[0], -1, "World Normal");
 
-		glTextureStorage2D(ColorBuffers[1], 1, GL_RGB8_SNORM, int(ScreenWidth), int(ScreenHeight));
+		glTextureStorage2D(ColorBuffers[1], 1, GL_RGBA8, int(ScreenWidth), int(ScreenHeight));
 		glTextureParameteri(ColorBuffers[1], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTextureParameteri(ColorBuffers[1], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTextureParameteri(ColorBuffers[1], GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -320,9 +324,11 @@ void AllocateRenderTargets(bool bErase = false)
 		glObjectLabel(GL_TEXTURE, ColorBuffers[1], -1, "Base Color");
 
 		glCreateFramebuffers(1, &ColorPass);
+		glObjectLabel(GL_FRAMEBUFFER, ColorPass, -1, "ColorPass");
 		glNamedFramebufferTexture(ColorPass, GL_COLOR_ATTACHMENT0, ColorBuffers[0], 0);
 		glNamedFramebufferTexture(ColorPass, GL_COLOR_ATTACHMENT1, ColorBuffers[1], 0);
-		glObjectLabel(GL_FRAMEBUFFER, ColorPass, -1, "FinalPass");
+		GLenum ColorAttachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+		glNamedFramebufferDrawBuffers(ColorPass, 2, ColorAttachments);
 	}
 
 	// Gloom Pass
@@ -336,9 +342,11 @@ void AllocateRenderTargets(bool bErase = false)
 		glObjectLabel(GL_TEXTURE, GloomBuffer, -1, "GloomBuffer");
 
 		glCreateFramebuffers(1, &GloomPass);
+		glObjectLabel(GL_FRAMEBUFFER, GloomPass, -1, "GloomPass");
 		glNamedFramebufferTexture(GloomPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
 		glNamedFramebufferTexture(GloomPass, GL_COLOR_ATTACHMENT0, GloomBuffer, 0);
-		glObjectLabel(GL_FRAMEBUFFER, GloomPass, -1, "GloomPass");
+		GLenum ColorAttachments[1] = { GL_COLOR_ATTACHMENT0 };
+		glNamedFramebufferDrawBuffers(GloomPass, 1, ColorAttachments);
 	}
 
 #if VINE_MODE
@@ -353,8 +361,10 @@ void AllocateRenderTargets(bool bErase = false)
 		glObjectLabel(GL_TEXTURE, FinalBuffer, -1, "FinalBuffer");
 
 		glCreateFramebuffers(1, &FinalPass);
-		glNamedFramebufferTexture(FinalPass, GL_COLOR_ATTACHMENT0, FinalBuffer, 0);
 		glObjectLabel(GL_FRAMEBUFFER, FinalPass, -1, "FinalPass");
+		glNamedFramebufferTexture(FinalPass, GL_COLOR_ATTACHMENT0, FinalBuffer, 0);
+		GLenum ColorAttachments[1] = { GL_COLOR_ATTACHMENT0 };
+		glNamedFramebufferDrawBuffers(FinalPass, 1, ColorAttachments);
 	}
 #endif // VINE_MODE
 }
@@ -367,15 +377,20 @@ StatusCode SDFExperiment::Setup()
 		 {GL_FRAGMENT_SHADER, "shaders/depth.fs.glsl"} },
 		"Depth"));
 
+	RETURN_ON_FAIL(ColorShader.Setup(
+		{ {GL_VERTEX_SHADER, "shaders/color.vs.glsl"},
+		 {GL_FRAGMENT_SHADER, "shaders/color.fs.glsl"} },
+		"Color"));
+
 	RETURN_ON_FAIL(GloomShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/gloom.vs.glsl"},
 		 {GL_FRAGMENT_SHADER, "shaders/gloom.fs.glsl"} },
 		"Gloom"));
 
-	RETURN_ON_FAIL(ColorShader.Setup(
-		{ {GL_VERTEX_SHADER, "shaders/color.vs.glsl"},
-		 {GL_FRAGMENT_SHADER, "shaders/color.fs.glsl"} },
-		"Color"));
+	RETURN_ON_FAIL(LightShader.Setup(
+		{ {GL_VERTEX_SHADER, "shaders/light.vs.glsl"},
+		 {GL_FRAGMENT_SHADER, "shaders/light.fs.glsl"} },
+		"Light"));
 
 	// cheese opengl into letting us draw triangles without any data
 	GLuint vao;
@@ -392,8 +407,9 @@ StatusCode SDFExperiment::Setup()
 	glGenQueries(1, &FrameStartTime);
 	glGenQueries(1, &FrameEndTime);
 	glGenQueries(1, &DepthPassTime);
-	glGenQueries(1, &GloomPassTime);
 	glGenQueries(1, &ColorPassTime);
+	glGenQueries(1, &GloomPassTime);
+	glGenQueries(1, &LightPassTime);
 #endif
 
 	AllocateRenderTargets();
@@ -675,6 +691,7 @@ void RenderDepth(const size_t VisibleObjectsCount)
 		glEndQuery(GL_TIME_ELAPSED);
 #endif
 	}
+	glDisable(GL_DEPTH_TEST);
 	glPopDebugGroup();
 }
 
@@ -682,12 +699,10 @@ void RenderDepth(const size_t VisibleObjectsCount)
 void RenderColor()
 {
 	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Color");
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_BLEND);
-	glBindFramebuffer(GL_FRAMEBUFFER, FinalPass);
+	glBindFramebuffer(GL_FRAMEBUFFER, ColorPass);
 	VisibleObjectsBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
-	glBindTextureUnit(3, GloomBuffer);
+	glBindTextureUnit(1, DepthBuffer);
+	glBindTextureUnit(2, ObjectIdBuffer);
 	ColorShader.Activate();
 #if ENABLE_RESOLUTION_SCALING
 	if (ResolutionScale < 1.0)
@@ -712,15 +727,11 @@ void RenderGloom(const size_t ShadowCastersCount)
 {
 	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Gloom");
 	glDepthMask(GL_FALSE);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendEquation(GL_FUNC_ADD);
 	glBlendFunc(GL_DST_COLOR, GL_ZERO);
 	glBindFramebuffer(GL_FRAMEBUFFER, GloomPass);
 	ShadowCastersBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
-	glBindTextureUnit(1, DepthBuffer);
-	glBindTextureUnit(2, ObjectIdBuffer);
 	GloomShader.Activate();
 	glClearColor(1.0, 1.0, 1.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -736,6 +747,27 @@ void RenderGloom(const size_t ShadowCastersCount)
 		glEndQuery(GL_TIME_ELAPSED);
 #endif
 	}
+	glDisable(GL_BLEND);
+	glPopDebugGroup();
+}
+
+
+void RenderLight()
+{
+	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Light");
+	glBindFramebuffer(GL_FRAMEBUFFER, FinalPass);
+	glBindTextureUnit(3, ColorBuffers[0]);
+	glBindTextureUnit(4, ColorBuffers[1]);
+	glBindTextureUnit(5, GloomBuffer);
+	LightShader.Activate();
+
+#if PROFILING
+	glBeginQuery(GL_TIME_ELAPSED, LightPassTime);
+#endif
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+#if PROFILING
+	glEndQuery(GL_TIME_ELAPSED);
+#endif
 	glPopDebugGroup();
 }
 
@@ -766,34 +798,43 @@ void GenerateTimingReport(const int FrameCounter, const size_t VisibleObjectsCou
 	{
 		const int StatSamples = 100;
 		static double DepthPassTimeSamplesNS[StatSamples] = { 0.0 };
-		static double GloomPassTimeSamplesNS[StatSamples] = { 0.0 };
 		static double ColorPassTimeSamplesNS[StatSamples] = { 0.0 };
+		static double GloomPassTimeSamplesNS[StatSamples] = { 0.0 };
+		static double LightPassTimeSamplesNS[StatSamples] = { 0.0 };
 
 		{
 			const int Sample = FrameCounter % StatSamples;
 			DepthPassTimeSamplesNS[Sample] = double(GetQueryValue(DepthPassTime, GL_QUERY_RESULT));
-			GloomPassTimeSamplesNS[Sample] = double(GetQueryValue(GloomPassTime, GL_QUERY_RESULT));
 			ColorPassTimeSamplesNS[Sample] = double(GetQueryValue(ColorPassTime, GL_QUERY_RESULT));
+			GloomPassTimeSamplesNS[Sample] = double(GetQueryValue(GloomPassTime, GL_QUERY_RESULT));
+			LightPassTimeSamplesNS[Sample] = double(GetQueryValue(LightPassTime, GL_QUERY_RESULT));
 		}
 
 		const double ValidSamples = min(FrameCounter + 1, StatSamples);
 		const double InvValidSamples = 1.0 / ValidSamples;
 		double AverageDepthPassTimeNs = 0.0;
-		double AverageGloomPassTimeNs = 0.0;
 		double AverageColorPassTimeNs = 0.0;
+		double AverageGloomPassTimeNs = 0.0;
+		double AverageLightPassTimeNs = 0.0;
 		for (int Sample = 0; Sample < ValidSamples; ++Sample)
 		{
 			AverageDepthPassTimeNs += DepthPassTimeSamplesNS[Sample] * InvValidSamples;
-			AverageGloomPassTimeNs += GloomPassTimeSamplesNS[Sample] * InvValidSamples;
 			AverageColorPassTimeNs += ColorPassTimeSamplesNS[Sample] * InvValidSamples;
+			AverageGloomPassTimeNs += GloomPassTimeSamplesNS[Sample] * InvValidSamples;
+			AverageLightPassTimeNs += LightPassTimeSamplesNS[Sample] * InvValidSamples;
 		}
-		const double AverageTotalDrawTimeNs = AverageDepthPassTimeNs + AverageGloomPassTimeNs + AverageColorPassTimeNs;
+		const double AverageTotalDrawTimeNs = \
+			AverageDepthPassTimeNs + \
+			AverageColorPassTimeNs + \
+			AverageGloomPassTimeNs + \
+			AverageLightPassTimeNs;
 		Log::GetStream() \
 			<< "Objects Drawn: " << VisibleObjectsCount << " / " << Objects.size() << "\n\n"
 			<< "Average GPU Times:\n"
 			<< " - Depth: " << (AverageDepthPassTimeNs * 1e-6) << " ms\n"
-			<< " - Gloom: " << (AverageGloomPassTimeNs * 1e-6) << " ms\n"
 			<< " - Color: " << (AverageColorPassTimeNs * 1e-6) << " ms\n"
+			<< " - Gloom: " << (AverageGloomPassTimeNs * 1e-6) << " ms\n"
+			<< " - Light: " << (AverageLightPassTimeNs * 1e-6) << " ms\n"
 			<< " - Total: " << (AverageTotalDrawTimeNs * 1e-6) << " ms\n"
 			<< "\n";
 	}
@@ -821,8 +862,9 @@ void SDFExperiment::Render(const int FrameCounter)
 	UpdateScene(Time, &VisibleObjectsCount, &ShadowCastersCount);
 
 	RenderDepth(VisibleObjectsCount);
-	RenderGloom(ShadowCastersCount);
 	RenderColor();
+	RenderGloom(ShadowCastersCount);
+	RenderLight();
 
 #if VINE_MODE
 	DumpFrameBufferToDisk(FrameCounter);

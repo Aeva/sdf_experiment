@@ -5,6 +5,13 @@ prepend: shaders/shapes.glsl
 --------------------------------------------------------------------------------
 
 
+#if ENABLE_LIGHT_TRANSMISSION
+#define TRANSMISSION_TYPE vec3
+#else
+#define TRANSMISSION_TYPE float
+#endif // ENABLE_LIGHT_TRANSMISSION
+
+
 struct RayData
 {
 	vec3 WorldDir;
