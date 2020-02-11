@@ -30,14 +30,17 @@ GLuint DepthPass;
 GLuint DepthBuffer;
 GLuint ObjectIdBuffer;
 
+GLuint ColorPass;
+GLuint ColorBuffers[2];
+
 GLuint GloomPass;
 GLuint GloomBuffer;
 
 #if VINE_MODE
-GLuint ColorPass;
-GLuint ColorBuffer;
+GLuint FinalPass;
+GLuint FinalBuffer;
 #else
-const GLuint ColorPass = 0;
+const GLuint FinalPass = 0;
 #endif // VINE_MODE
 
 #if ENABLE_RESOLUTION_SCALING
@@ -242,7 +245,7 @@ StatusCode ReadMapData(const int Width, const int Height)
 }
 
 
-void AllocateRenderTargets(bool bErase=false)
+void AllocateRenderTargets(bool bErase = false)
 {
 #if VINE_MODE
 	const float ScreenWidth = VineModeWidth;
@@ -260,64 +263,99 @@ void AllocateRenderTargets(bool bErase=false)
 	if (bErase)
 	{
 		glDeleteFramebuffers(1, &DepthPass);
+		glDeleteFramebuffers(1, &ColorPass);
 		glDeleteFramebuffers(1, &GloomPass);
 #if VINE_MODE
-		glDeleteFramebuffers(1, &ColorPass);
+		glDeleteFramebuffers(1, &FinalPass);
 #endif // VINE_MODE
 		glDeleteTextures(1, &DepthBuffer);
 		glDeleteTextures(1, &ObjectIdBuffer);
+		glDeleteTextures(2, &(ColorBuffers[0]));
 		glDeleteTextures(1, &GloomBuffer);
 #if VINE_MODE
-		glDeleteTextures(1, &ColorBuffer);
+		glDeleteTextures(1, &FinalBuffer);
 #endif // VINE_MODE
 	}
 
-	glCreateTextures(GL_TEXTURE_2D, 1, &DepthBuffer);
-	glTextureStorage2D(DepthBuffer, 1, GL_DEPTH_COMPONENT32F, int(ScreenWidth), int(ScreenHeight));
-	glTextureParameteri(DepthBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(DepthBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureParameteri(DepthBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(DepthBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glObjectLabel(GL_TEXTURE, DepthBuffer, -1, "DepthBuffer");
+	// Depth Pass
+	{
+		glCreateTextures(GL_TEXTURE_2D, 1, &DepthBuffer);
+		glTextureStorage2D(DepthBuffer, 1, GL_DEPTH_COMPONENT32F, int(ScreenWidth), int(ScreenHeight));
+		glTextureParameteri(DepthBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTextureParameteri(DepthBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTextureParameteri(DepthBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(DepthBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glObjectLabel(GL_TEXTURE, DepthBuffer, -1, "DepthBuffer");
 
-	glCreateTextures(GL_TEXTURE_2D, 1, &ObjectIdBuffer);
-	glTextureStorage2D(ObjectIdBuffer, 1, GL_R32I, int(ScreenWidth), int(ScreenHeight));
-	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glObjectLabel(GL_TEXTURE, ObjectIdBuffer, -1, "ObjectIdBuffer");
+		glCreateTextures(GL_TEXTURE_2D, 1, &ObjectIdBuffer);
+		glTextureStorage2D(ObjectIdBuffer, 1, GL_R32I, int(ScreenWidth), int(ScreenHeight));
+		glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glObjectLabel(GL_TEXTURE, ObjectIdBuffer, -1, "ObjectIdBuffer");
 
-	glCreateFramebuffers(1, &DepthPass);
-	glNamedFramebufferTexture(DepthPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
-	glNamedFramebufferTexture(DepthPass, GL_COLOR_ATTACHMENT0, ObjectIdBuffer, 0);
-	glObjectLabel(GL_FRAMEBUFFER, DepthPass, -1, "DepthPass");
+		glCreateFramebuffers(1, &DepthPass);
+		glNamedFramebufferTexture(DepthPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
+		glNamedFramebufferTexture(DepthPass, GL_COLOR_ATTACHMENT0, ObjectIdBuffer, 0);
+		glObjectLabel(GL_FRAMEBUFFER, DepthPass, -1, "DepthPass");
+	}
 
-	glCreateTextures(GL_TEXTURE_2D, 1, &GloomBuffer);
-	glTextureStorage2D(GloomBuffer, 1, GLOOM_BUFFER_FORMAT, int(ScreenWidth), int(ScreenHeight));
-	glTextureParameteri(GloomBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(GloomBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureParameteri(GloomBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(GloomBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glObjectLabel(GL_TEXTURE, GloomBuffer, -1, "GloomBuffer");
+	// Color Pass
+	{
+		glCreateTextures(GL_TEXTURE_2D, 2, &(ColorBuffers[0]));
 
-	glCreateFramebuffers(1, &GloomPass);
-	glNamedFramebufferTexture(GloomPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
-	glNamedFramebufferTexture(GloomPass, GL_COLOR_ATTACHMENT0, GloomBuffer, 0);
-	glObjectLabel(GL_FRAMEBUFFER, GloomPass, -1, "GloomPass");
+		glTextureStorage2D(ColorBuffers[0], 1, GL_RGB8_SNORM, int(ScreenWidth), int(ScreenHeight));
+		glTextureParameteri(ColorBuffers[0], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTextureParameteri(ColorBuffers[0], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTextureParameteri(ColorBuffers[0], GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(ColorBuffers[0], GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glObjectLabel(GL_TEXTURE, ColorBuffers[0], -1, "World Normal");
+
+		glTextureStorage2D(ColorBuffers[1], 1, GL_RGB8_SNORM, int(ScreenWidth), int(ScreenHeight));
+		glTextureParameteri(ColorBuffers[1], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTextureParameteri(ColorBuffers[1], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTextureParameteri(ColorBuffers[1], GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(ColorBuffers[1], GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glObjectLabel(GL_TEXTURE, ColorBuffers[1], -1, "Base Color");
+
+		glCreateFramebuffers(1, &ColorPass);
+		glNamedFramebufferTexture(ColorPass, GL_COLOR_ATTACHMENT0, ColorBuffers[0], 0);
+		glNamedFramebufferTexture(ColorPass, GL_COLOR_ATTACHMENT1, ColorBuffers[1], 0);
+		glObjectLabel(GL_FRAMEBUFFER, ColorPass, -1, "FinalPass");
+	}
+
+	// Gloom Pass
+	{
+		glCreateTextures(GL_TEXTURE_2D, 1, &GloomBuffer);
+		glTextureStorage2D(GloomBuffer, 1, GLOOM_BUFFER_FORMAT, int(ScreenWidth), int(ScreenHeight));
+		glTextureParameteri(GloomBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTextureParameteri(GloomBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTextureParameteri(GloomBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(GloomBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glObjectLabel(GL_TEXTURE, GloomBuffer, -1, "GloomBuffer");
+
+		glCreateFramebuffers(1, &GloomPass);
+		glNamedFramebufferTexture(GloomPass, GL_DEPTH_ATTACHMENT, DepthBuffer, 0);
+		glNamedFramebufferTexture(GloomPass, GL_COLOR_ATTACHMENT0, GloomBuffer, 0);
+		glObjectLabel(GL_FRAMEBUFFER, GloomPass, -1, "GloomPass");
+	}
 
 #if VINE_MODE
-	glCreateTextures(GL_TEXTURE_2D, 1, &ColorBuffer);
-	glTextureStorage2D(ColorBuffer, 1, GL_RGB8, int(ScreenWidth), int(ScreenHeight));
-	glTextureParameteri(ColorBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(ColorBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureParameteri(ColorBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(ColorBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glObjectLabel(GL_TEXTURE, ColorBuffer, -1, "ColorBuffer");
+	// Final Output
+	{
+		glCreateTextures(GL_TEXTURE_2D, 1, &FinalBuffer);
+		glTextureStorage2D(FinalBuffer, 1, GL_RGB8, int(ScreenWidth), int(ScreenHeight));
+		glTextureParameteri(FinalBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTextureParameteri(FinalBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTextureParameteri(FinalBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(FinalBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glObjectLabel(GL_TEXTURE, FinalBuffer, -1, "FinalBuffer");
 
-	glCreateFramebuffers(1, &ColorPass);
-	glNamedFramebufferTexture(ColorPass, GL_COLOR_ATTACHMENT0, ColorBuffer, 0);
-	glObjectLabel(GL_FRAMEBUFFER, ColorPass, -1, "ColorPass");
+		glCreateFramebuffers(1, &FinalPass);
+		glNamedFramebufferTexture(FinalPass, GL_COLOR_ATTACHMENT0, FinalBuffer, 0);
+		glObjectLabel(GL_FRAMEBUFFER, FinalPass, -1, "FinalPass");
+	}
 #endif // VINE_MODE
 }
 
@@ -464,21 +502,8 @@ void SDFExperiment::WindowIsDirty()
 }
 
 
-void SDFExperiment::Render(const int FrameCounter)
+void UpdateScene(const double Time, size_t* OutVisibleObjectsCount, size_t* OutShadowCastersCount)
 {
-#if PROFILING
-	glQueryCounter(FrameStartTime, GL_TIMESTAMP);
-#endif
-#if VINE_MODE
-	// Clear the unused backbuffer to red to make it easier to spot problems.
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClearColor(1.0, 0.0, 0.0, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	double Time = 1.0 / double(VINE_FPS) * double(FrameCounter);
-#else
-	double Time = glfwGetTime();
-#endif // VINE_MODE
-
 #if ENABLE_HOVERING_SHAPES && USE_SCENE != SCENE_TRANSLUCENTS
 	{
 		double Hover = (sin(Time * 2.0) + 1.0) / 2.5;
@@ -544,16 +569,8 @@ void SDFExperiment::Render(const int FrameCounter)
 		ViewInfo.Upload((void*)&BufferData, sizeof(BufferData));
 	}
 
-	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Depth");
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-	glBindFramebuffer(GL_FRAMEBUFFER, DepthPass);
-	glBindTextureUnit(1, 0);
-	glBindTextureUnit(2, 0);
-	DepthShader.Activate();
-	glClear(GL_DEPTH_BUFFER_BIT);
 	UpdateScreenInfo(true);
+
 
 	// Update the information for all objects.
 	std::vector<ShapeUploadInfo> VisibleObjects;
@@ -567,13 +584,13 @@ void SDFExperiment::Render(const int FrameCounter)
 		const vec4 LocalCorners[8] = \
 		{
 			vec4(-Bounds.x, -Bounds.y, -Bounds.z, 1.0),
-			vec4(-Bounds.x,  Bounds.y, -Bounds.z, 1.0),
-			vec4( Bounds.x, -Bounds.y, -Bounds.z, 1.0),
-			vec4( Bounds.x,  Bounds.y, -Bounds.z, 1.0),
-			vec4(-Bounds.x, -Bounds.y,  Bounds.z, 1.0),
-			vec4(-Bounds.x,  Bounds.y,  Bounds.z, 1.0),
-			vec4( Bounds.x, -Bounds.y,  Bounds.z, 1.0),
-			vec4( Bounds.x,  Bounds.y,  Bounds.z, 1.0)
+				vec4(-Bounds.x, Bounds.y, -Bounds.z, 1.0),
+				vec4(Bounds.x, -Bounds.y, -Bounds.z, 1.0),
+				vec4(Bounds.x, Bounds.y, -Bounds.z, 1.0),
+				vec4(-Bounds.x, -Bounds.y, Bounds.z, 1.0),
+				vec4(-Bounds.x, Bounds.y, Bounds.z, 1.0),
+				vec4(Bounds.x, -Bounds.y, Bounds.z, 1.0),
+				vec4(Bounds.x, Bounds.y, Bounds.z, 1.0)
 		};
 		float MinViewZ;
 		float MaxViewZ;
@@ -621,8 +638,10 @@ void SDFExperiment::Render(const int FrameCounter)
 	}
 
 	// Upload the information for objects required for rendering.
-	const int VisibleObjectsCount = VisibleObjects.size();
-	const int ShadowCastersCount = ShadowCasters.size();
+	const size_t VisibleObjectsCount = VisibleObjects.size();
+	const size_t ShadowCastersCount = ShadowCasters.size();
+	*OutVisibleObjectsCount = VisibleObjectsCount;
+	*OutShadowCastersCount = ShadowCastersCount;
 
 	VisibleObjectsBuffer.Upload((void*)VisibleObjects.data(), sizeof(ShapeUploadInfo) * VisibleObjectsCount);
 	ShadowCastersBuffer.Upload((void*)ShadowCasters.data(), sizeof(ShapeUploadInfo) * ShadowCastersCount);
@@ -630,6 +649,20 @@ void SDFExperiment::Render(const int FrameCounter)
 	VisibleObjectsBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
 	ScreenInfo.Bind(GL_UNIFORM_BUFFER, 1);
 	ViewInfo.Bind(GL_UNIFORM_BUFFER, 2);
+}
+
+
+void RenderDepth(const size_t VisibleObjectsCount)
+{
+	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Depth");
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glBindFramebuffer(GL_FRAMEBUFFER, DepthPass);
+	glBindTextureUnit(1, 0);
+	glBindTextureUnit(2, 0);
+	DepthShader.Activate();
+	glClear(GL_DEPTH_BUFFER_BIT);
 
 	// Draw all of the everything
 	if (VisibleObjectsCount > 0)
@@ -643,40 +676,16 @@ void SDFExperiment::Render(const int FrameCounter)
 #endif
 	}
 	glPopDebugGroup();
+}
 
-	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Gloom");
-	glDepthMask(GL_FALSE);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-	glEnable(GL_BLEND);
-	glBlendEquation(GL_FUNC_ADD);
-	glBlendFunc(GL_DST_COLOR, GL_ZERO);
-	glBindFramebuffer(GL_FRAMEBUFFER, GloomPass);
-	ShadowCastersBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
-	glBindTextureUnit(1, DepthBuffer);
-	glBindTextureUnit(2, ObjectIdBuffer);
-	GloomShader.Activate();
-	glClearColor(1.0, 1.0, 1.0, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT);
 
-	// Cast Shadows
-	if (VisibleObjectsCount > 0)
-	{
-#if PROFILING
-		glBeginQuery(GL_TIME_ELAPSED, GloomPassTime);
-#endif
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 3, ShadowCastersCount);
-#if PROFILING
-		glEndQuery(GL_TIME_ELAPSED);
-#endif
-	}
-	glPopDebugGroup();
-
+void RenderColor()
+{
 	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Color");
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
-	glBindFramebuffer(GL_FRAMEBUFFER, ColorPass);
+	glBindFramebuffer(GL_FRAMEBUFFER, FinalPass);
 	VisibleObjectsBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
 	glBindTextureUnit(3, GloomBuffer);
 	ColorShader.Activate();
@@ -696,23 +705,63 @@ void SDFExperiment::Render(const int FrameCounter)
 	glEndQuery(GL_TIME_ELAPSED);
 #endif
 	glPopDebugGroup();
+}
+
+
+void RenderGloom(const size_t ShadowCastersCount)
+{
+	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Gloom");
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_DST_COLOR, GL_ZERO);
+	glBindFramebuffer(GL_FRAMEBUFFER, GloomPass);
+	ShadowCastersBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
+	glBindTextureUnit(1, DepthBuffer);
+	glBindTextureUnit(2, ObjectIdBuffer);
+	GloomShader.Activate();
+	glClearColor(1.0, 1.0, 1.0, 1.0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	// Cast Shadows
+	if (ShadowCastersCount > 0)
+	{
+#if PROFILING
+		glBeginQuery(GL_TIME_ELAPSED, GloomPassTime);
+#endif
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 3, ShadowCastersCount);
+#if PROFILING
+		glEndQuery(GL_TIME_ELAPSED);
+#endif
+	}
+	glPopDebugGroup();
+}
+
 
 #if VINE_MODE
+void DumpFrameBufferToDisk(const int FrameCounter)
+{
 	if (FrameCounter > -1)
 	{
 		std::vector<char> PixelData;
 		const size_t Channels = 4;
 		PixelData.resize(size_t(VineModeWidth) * size_t(VineModeHeight) * Channels);
-		glNamedFramebufferReadBuffer(ColorPass, GL_COLOR_ATTACHMENT0);
+		glNamedFramebufferReadBuffer(FinalPass, GL_COLOR_ATTACHMENT0);
 		glReadPixels(0, 0, GLsizei(VineModeWidth), GLsizei(VineModeHeight), GL_RGBA, GL_UNSIGNED_BYTE, PixelData.data());
 		FILE* FileHandle;
 		FileHandle = fopen("frames/raw_data", "ab");
 		fwrite(PixelData.data(), sizeof(char), PixelData.size(), FileHandle);
 		fclose(FileHandle);
 	}
+}
 #endif // VINE_MODE
 
+
 #if PROFILING
+void GenerateTimingReport(const int FrameCounter, const size_t VisibleObjectsCount)
+{
 	glQueryCounter(FrameEndTime, GL_TIMESTAMP);
 	{
 		const int StatSamples = 100;
@@ -748,5 +797,37 @@ void SDFExperiment::Render(const int FrameCounter)
 			<< " - Total: " << (AverageTotalDrawTimeNs * 1e-6) << " ms\n"
 			<< "\n";
 	}
+}
+#endif
+
+
+void SDFExperiment::Render(const int FrameCounter)
+{
+#if PROFILING
+	glQueryCounter(FrameStartTime, GL_TIMESTAMP);
+#endif
+#if VINE_MODE
+	// Clear the unused backbuffer to red to make it easier to spot problems.
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClearColor(1.0, 0.0, 0.0, 1.0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	double Time = 1.0 / double(VINE_FPS) * double(FrameCounter);
+#else
+	double Time = glfwGetTime();
+#endif // VINE_MODE
+
+	size_t VisibleObjectsCount = 0;
+	size_t ShadowCastersCount = 0;
+	UpdateScene(Time, &VisibleObjectsCount, &ShadowCastersCount);
+
+	RenderDepth(VisibleObjectsCount);
+	RenderGloom(ShadowCastersCount);
+	RenderColor();
+
+#if VINE_MODE
+	DumpFrameBufferToDisk(FrameCounter);
+#endif
+#if PROFILING
+	GenerateTimingReport(FrameCounter, VisibleObjectsCount);
 #endif
 }
