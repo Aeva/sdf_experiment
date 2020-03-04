@@ -67,6 +67,10 @@
 #define VISUALIZE_ALIASING_GRADIENT 0
 #define VISUALIZE_TRANSMISSION 0
 
+#ifdef __cplusplus
+#define GL_NV_mesh_shader 0
+#endif
+
 // ----------------
 // COMMON CONSTANTS
 // ----------------

@@ -182,14 +182,21 @@ StatusCode FillSources(std::vector<std::string>& BreadCrumbs, std::vector<std::s
 
 const std::string GetShaderExtensions(GLenum ShaderType)
 {
+	std::string Version = "#version 420\n";
+
+#if GL_NV_mesh_shader
+	if (GLAD_GL_NV_mesh_shader)
+	{
+		Version = "#version 450\n";
+	}
+#endif
+
 	static const std::string VertexExtensions = \
-		"#version 420\n" \
 		"#extension GL_ARB_gpu_shader5 : require\n" \
 		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
 		"#extension GL_ARB_shading_language_420pack : require\n";
 
 	static const std::string FragmentExtensions = \
-		"#version 420\n" \
 		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
 		"#extension GL_ARB_shader_image_load_store : require\n" \
 		"#extension GL_ARB_gpu_shader5 : require\n" \
@@ -197,24 +204,36 @@ const std::string GetShaderExtensions(GLenum ShaderType)
 		"#extension GL_ARB_fragment_coord_conventions : require\n";
 
 	static const std::string ComputeExtensions = \
-		"#version 420\n" \
 		"#extension GL_ARB_compute_shader : require\n" \
 	   	"#extension GL_ARB_shader_storage_buffer_object : require\n" \
 	   	"#extension GL_ARB_shader_image_load_store : require\n" \
 		"#extension GL_ARB_gpu_shader5 : require\n" \
 		"#extension GL_ARB_shading_language_420pack : require\n";
 
+#if GL_NV_mesh_shader
+	static const std::string MeshExtensions = \
+		"#extension GL_NV_mesh_shader : require\n";
+#endif
+
 	if (ShaderType == GL_VERTEX_SHADER)
 	{
-		return VertexExtensions;
+		return Version + VertexExtensions;
 	}
 	else if (ShaderType == GL_FRAGMENT_SHADER)
 	{
-		return FragmentExtensions;
+		return Version + FragmentExtensions;
+	}
+	else if (ShaderType == GL_MESH_SHADER_NV)
+	{
+		return Version + MeshExtensions;
+	}
+	else if (ShaderType == GL_TASK_SHADER_NV)
+	{
+		return Version + MeshExtensions;
 	}
 	else
 	{
-		return ComputeExtensions;
+		return Version + ComputeExtensions;
 	}
 }
 
@@ -275,6 +294,8 @@ GLuint ShaderModeBit(GLenum ShaderMode)
 	else if (ShaderMode == GL_GEOMETRY_SHADER) return GL_GEOMETRY_SHADER_BIT;
 	else if (ShaderMode == GL_FRAGMENT_SHADER) return GL_FRAGMENT_SHADER_BIT;
 	else if (ShaderMode == GL_COMPUTE_SHADER) return GL_COMPUTE_SHADER_BIT;
+	else if (ShaderMode == GL_MESH_SHADER_NV) return GL_MESH_SHADER_BIT_NV;
+	else if (ShaderMode == GL_TASK_SHADER_NV) return GL_TASK_SHADER_BIT_NV;
 	else return 0;
 }
 

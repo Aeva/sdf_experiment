@@ -17,6 +17,8 @@
 
 using namespace glm;
 
+ShaderPipeline MeshShaderTest;
+
 ShaderPipeline DepthShader;
 ShaderPipeline ColorShader;
 ShaderPipeline GloomShader;
@@ -372,6 +374,16 @@ void AllocateRenderTargets(bool bErase = false)
 
 StatusCode SDFExperiment::Setup()
 {
+#if GL_NV_mesh_shader
+	if (GLAD_GL_NV_mesh_shader)
+	{
+		RETURN_ON_FAIL(MeshShaderTest.Setup(
+			{ {GL_MESH_SHADER_NV, "shaders/mesh_shader_test.ms.glsl"},
+			 {GL_FRAGMENT_SHADER, "shaders/mesh_shader_test.fs.glsl"} },
+			"Depth"));
+	}
+#endif
+
 	RETURN_ON_FAIL(DepthShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/depth.vs.glsl"},
 		 {GL_FRAGMENT_SHADER, "shaders/depth.fs.glsl"} },
@@ -865,6 +877,16 @@ void SDFExperiment::Render(const int FrameCounter)
 	RenderColor();
 	RenderGloom(ShadowCastersCount);
 	RenderLight();
+
+#if GL_NV_mesh_shader
+	if (GLAD_GL_NV_mesh_shader)
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Mesh Shader Test");
+		MeshShaderTest.Activate();
+		glDrawMeshTasksNV(0, 1);
+		glPopDebugGroup();
+	}
+#endif
 
 #if VINE_MODE
 	DumpFrameBufferToDisk(FrameCounter);

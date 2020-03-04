@@ -79,7 +79,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>DEBUG_BUILD;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PROFILING;DEBUG_BUILD;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -96,7 +96,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PROFILING;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -115,7 +115,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)..\dependencies\lodepng\include;$(SolutionDir)..\dependencies\glm-0.9.9.6;$(SolutionDir)..\dependencies\glad\include;$(SolutionDir)..\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG_BUILD</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PROFILING;DEBUG_BUILD</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -125,8 +125,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)..\dependencies\lodepng\include;$(SolutionDir)..\dependencies\glm-0.9.9.6;$(SolutionDir)..\dependencies\glad\include;$(SolutionDir)..\dependencies\glfw-3.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>
-      </PreprocessorDefinitions>
+      <PreprocessorDefinitions>PROFILING;</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\dependencies\glfw-3.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -161,6 +160,8 @@
     <None Include="..\shaders\light.fs.glsl" />
     <None Include="..\shaders\light.vs.glsl" />
     <None Include="..\shaders\math.glsl" />
+    <None Include="..\shaders\mesh_shader_test.fs.glsl" />
+    <None Include="..\shaders\mesh_shader_test.ms.glsl" />
     <None Include="..\shaders\objects.glsl" />
     <None Include="..\shaders\paint.glsl" />
     <None Include="..\shaders\raymarch.glsl" />
