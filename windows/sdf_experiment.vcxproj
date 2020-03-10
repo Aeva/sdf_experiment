@@ -164,6 +164,7 @@
     <None Include="..\shaders\mesh_shader_test.ms.glsl" />
     <None Include="..\shaders\objects.glsl" />
     <None Include="..\shaders\paint.glsl" />
+    <None Include="..\shaders\range.cs.glsl" />
     <None Include="..\shaders\raymarch.glsl" />
     <None Include="..\shaders\scene.glsl" />
     <None Include="..\shaders\screen.glsl" />

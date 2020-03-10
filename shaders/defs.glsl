@@ -95,3 +95,5 @@ const float AlmostZero = 0.001;
 const float VineModeWidth = 720.0;
 const float VineModeHeight = 1280.0;
 #endif
+
+#define DIV_UP(X, Y) ((X + Y - 1) / Y)

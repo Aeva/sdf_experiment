@@ -117,5 +117,8 @@
     <None Include="..\shaders\mesh_shader_test.ms.glsl">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\shaders\range.cs.glsl">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -20,6 +20,7 @@ using namespace glm;
 ShaderPipeline MeshShaderTest;
 
 ShaderPipeline DepthShader;
+ShaderPipeline RangeShader;
 ShaderPipeline ColorShader;
 ShaderPipeline GloomShader;
 ShaderPipeline LightShader;
@@ -31,6 +32,7 @@ Buffer ShadowCastersBuffer("ShadowCastersBuffer");
 
 GLuint DepthPass;
 GLuint DepthBuffer;
+GLuint RangeBuffer;
 GLuint ObjectIdBuffer;
 
 GLuint ColorPass;
@@ -273,6 +275,7 @@ void AllocateRenderTargets(bool bErase = false)
 		glDeleteFramebuffers(1, &FinalPass);
 #endif // VINE_MODE
 		glDeleteTextures(1, &DepthBuffer);
+		glDeleteTextures(1, &RangeBuffer);
 		glDeleteTextures(1, &ObjectIdBuffer);
 		glDeleteTextures(2, &(ColorBuffers[0]));
 		glDeleteTextures(1, &GloomBuffer);
@@ -298,6 +301,14 @@ void AllocateRenderTargets(bool bErase = false)
 		glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTextureParameteri(ObjectIdBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glObjectLabel(GL_TEXTURE, ObjectIdBuffer, -1, "ObjectIdBuffer");
+
+		glCreateTextures(GL_TEXTURE_2D, 1, &RangeBuffer);
+		glTextureStorage2D(RangeBuffer, 1, GL_RG32F, DIV_UP(int(ScreenWidth), 8), DIV_UP(int(ScreenHeight), 8));
+		glTextureParameteri(RangeBuffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTextureParameteri(RangeBuffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTextureParameteri(RangeBuffer, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(RangeBuffer, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glObjectLabel(GL_TEXTURE, RangeBuffer, -1, "RangeBuffer");
 
 		glCreateFramebuffers(1, &DepthPass);
 		glObjectLabel(GL_FRAMEBUFFER, DepthPass, -1, "DepthPass");
@@ -388,6 +399,10 @@ StatusCode SDFExperiment::Setup()
 		{ {GL_VERTEX_SHADER, "shaders/depth.vs.glsl"},
 		 {GL_FRAGMENT_SHADER, "shaders/depth.fs.glsl"} },
 		"Depth"));
+
+	RETURN_ON_FAIL(RangeShader.Setup(
+		{ {GL_COMPUTE_SHADER, "shaders/range.cs.glsl"} },
+		"Range"));
 
 	RETURN_ON_FAIL(ColorShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/color.vs.glsl"},
@@ -704,6 +719,19 @@ void RenderDepth(const size_t VisibleObjectsCount)
 #endif
 	}
 	glDisable(GL_DEPTH_TEST);
+	{
+		// Each pixel in the range buffer is the minimum and maximum values corresponding to an 8x8 area in the depth buffer.
+		RangeShader.Activate();
+		float ScreenWidth;
+		float ScreenHeight;
+		GetScreenSize(&ScreenWidth, &ScreenHeight);
+		int GroupsX = DIV_UP(int(ScreenWidth), 8);
+		int GroupsY = DIV_UP(int(ScreenHeight), 8);
+		glBindImageTexture(0, RangeBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG32F);
+		glBindTextureUnit(1, DepthBuffer);
+		glDispatchCompute(GroupsX, GroupsY, 1);
+		glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+	}
 	glPopDebugGroup();
 }
 
