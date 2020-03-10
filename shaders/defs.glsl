@@ -68,8 +68,10 @@
 #define VISUALIZE_TRANSMISSION 0
 
 #ifdef __cplusplus
-#define GL_NV_mesh_shader 0
+#define GL_NV_mesh_shader ENABLE_CUBETRACE && 0
 #endif
+
+#define ENABLE_TILED_GLOOM ENABLE_CUBETRACE
 
 // ----------------
 // COMMON CONSTANTS

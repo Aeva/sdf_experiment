@@ -772,9 +772,24 @@ void RenderGloom(const size_t ShadowCastersCount)
 	glBlendFunc(GL_DST_COLOR, GL_ZERO);
 	glBindFramebuffer(GL_FRAMEBUFFER, GloomPass);
 	ShadowCastersBuffer.Bind(GL_SHADER_STORAGE_BUFFER, 0);
+#if ENABLE_TILED_GLOOM
+	glBindTextureUnit(3, RangeBuffer);
+#endif
 	GloomShader.Activate();
 	glClearColor(1.0, 1.0, 1.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
+
+#if ENABLE_TILED_GLOOM
+	float ScreenWidth;
+	float ScreenHeight;
+	GetScreenSize(&ScreenWidth, &ScreenHeight);
+	const int GroupsX = DIV_UP(int(ScreenWidth), 8);
+	const int GroupsY = DIV_UP(int(ScreenHeight), 8);
+	const int Tiles = GroupsX * GroupsY;
+	const int Triangles = 6 * Tiles;
+#else
+	const int Triangles = 3;
+#endif
 
 	// Cast Shadows
 	if (ShadowCastersCount > 0)
@@ -782,7 +797,7 @@ void RenderGloom(const size_t ShadowCastersCount)
 #if PROFILING
 		glBeginQuery(GL_TIME_ELAPSED, GloomPassTime);
 #endif
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 3, ShadowCastersCount);
+		glDrawArraysInstanced(GL_TRIANGLES, 0, Triangles, ShadowCastersCount);
 #if PROFILING
 		glEndQuery(GL_TIME_ELAPSED);
 #endif
