@@ -17,8 +17,6 @@
 
 using namespace glm;
 
-ShaderPipeline MeshShaderTest;
-
 ShaderPipeline DepthShader;
 ShaderPipeline RangeShader;
 ShaderPipeline ColorShader;
@@ -386,14 +384,11 @@ void AllocateRenderTargets(bool bErase = false)
 StatusCode SDFExperiment::Setup()
 {
 #if GL_NV_mesh_shader
-	if (GLAD_GL_NV_mesh_shader)
+	if (!GLAD_GL_NV_mesh_shader)
 	{
-		RETURN_ON_FAIL(MeshShaderTest.Setup(
-			{ {GL_MESH_SHADER_NV, "shaders/mesh_shader_test.ms.glsl"},
-			 {GL_FRAGMENT_SHADER, "shaders/mesh_shader_test.fs.glsl"} },
-			"Depth"));
+		return StatusCode::FAIL;
 	}
-#endif
+#endif // GL_NV_mesh_shader
 
 	RETURN_ON_FAIL(DepthShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/depth.vs.glsl"},
@@ -409,10 +404,17 @@ StatusCode SDFExperiment::Setup()
 		 {GL_FRAGMENT_SHADER, "shaders/color.fs.glsl"} },
 		"Color"));
 
+#if GL_NV_mesh_shader
+	RETURN_ON_FAIL(GloomShader.Setup(
+		{ {GL_MESH_SHADER_NV, "shaders/gloom.vs.glsl"},
+		 {GL_FRAGMENT_SHADER, "shaders/gloom.fs.glsl"} },
+		"Gloom"));
+#else
 	RETURN_ON_FAIL(GloomShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/gloom.vs.glsl"},
 		 {GL_FRAGMENT_SHADER, "shaders/gloom.fs.glsl"} },
 		"Gloom"));
+#endif // GL_NV_mesh_shader
 
 	RETURN_ON_FAIL(LightShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/light.vs.glsl"},
@@ -797,7 +799,12 @@ void RenderGloom(const size_t ShadowCastersCount)
 #if PROFILING
 		glBeginQuery(GL_TIME_ELAPSED, GloomPassTime);
 #endif
+#if GL_NV_mesh_shader
+		//glDrawMeshTasksNV(0, DIV_UP(Tiles * ShadowCastersCount, 32));
+		glDrawMeshTasksNV(0, DIV_UP(Tiles, 32));
+#else
 		glDrawArraysInstanced(GL_TRIANGLES, 0, Triangles, ShadowCastersCount);
+#endif // #if GL_NV_mesh_shader
 #if PROFILING
 		glEndQuery(GL_TIME_ELAPSED);
 #endif
@@ -920,16 +927,6 @@ void SDFExperiment::Render(const int FrameCounter)
 	RenderColor();
 	RenderGloom(ShadowCastersCount);
 	RenderLight();
-
-#if GL_NV_mesh_shader
-	if (GLAD_GL_NV_mesh_shader)
-	{
-		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Mesh Shader Test");
-		MeshShaderTest.Activate();
-		glDrawMeshTasksNV(0, 1);
-		glPopDebugGroup();
-	}
-#endif
 
 #if VINE_MODE
 	DumpFrameBufferToDisk(FrameCounter);

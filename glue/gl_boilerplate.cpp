@@ -194,25 +194,33 @@ const std::string GetShaderExtensions(GLenum ShaderType)
 	static const std::string VertexExtensions = \
 		"#extension GL_ARB_gpu_shader5 : require\n" \
 		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
-		"#extension GL_ARB_shading_language_420pack : require\n";
+		"#extension GL_ARB_shading_language_420pack : require\n" \
+		"#define VERTEX_SHADER 1\n";
 
 	static const std::string FragmentExtensions = \
 		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
 		"#extension GL_ARB_shader_image_load_store : require\n" \
 		"#extension GL_ARB_gpu_shader5 : require\n" \
 		"#extension GL_ARB_shading_language_420pack : require\n" \
-		"#extension GL_ARB_fragment_coord_conventions : require\n";
+		"#extension GL_ARB_fragment_coord_conventions : require\n" \
+		"#define FRAGMENT_SHADER 1\n";
 
 	static const std::string ComputeExtensions = \
 		"#extension GL_ARB_compute_shader : require\n" \
 	   	"#extension GL_ARB_shader_storage_buffer_object : require\n" \
 	   	"#extension GL_ARB_shader_image_load_store : require\n" \
 		"#extension GL_ARB_gpu_shader5 : require\n" \
-		"#extension GL_ARB_shading_language_420pack : require\n";
+		"#extension GL_ARB_shading_language_420pack : require\n" \
+		"#define COMPUTE_SHADER 1\n";
 
 #if GL_NV_mesh_shader
 	static const std::string MeshExtensions = \
-		"#extension GL_NV_mesh_shader : require\n";
+		"#extension GL_NV_mesh_shader : require\n" \
+		"#define MESH_SHADER 1\n";
+
+	static const std::string TaskExtensions = \
+		"#extension GL_NV_mesh_shader : require\n" \
+		"#define TASK_SHADER 1\n";
 #endif
 
 	if (ShaderType == GL_VERTEX_SHADER)
@@ -229,7 +237,7 @@ const std::string GetShaderExtensions(GLenum ShaderType)
 	}
 	else if (ShaderType == GL_TASK_SHADER_NV)
 	{
-		return Version + MeshExtensions;
+		return Version + TaskExtensions;
 	}
 	else
 	{

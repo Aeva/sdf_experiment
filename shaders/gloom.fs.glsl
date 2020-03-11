@@ -58,6 +58,8 @@ RayData GetOcclusionRay(vec3 WorldRayStart, const vec3 WorldRayDir)
 
 void main()
 {
+	OutTransmission = vec3(0.0);
+	return;
 	vec3 Position;
 	int ObjectId;
 	Reconstitute(Position, ObjectId);
