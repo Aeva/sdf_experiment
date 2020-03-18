@@ -54,10 +54,13 @@ void main()
 #if ENABLE_TILED_GLOOM
     const int BoardWidth = DIV_UP(int(ScreenSize.x), 8);
     const int BoardHeight = DIV_UP(int(ScreenSize.y), 8);
+#if ALLOW_POINT_PRIMS
+    const int TileID = gl_VertexID;
+#else
     const int TileID = gl_VertexID / 6;
-    const int TileX = TileID % BoardWidth;
-    const int TileY = TileID / BoardWidth;
-    vec2 DepthMinMax = texelFetch(DepthRange, ivec2(TileX, TileY), 0).xy;
+#endif // ALLOW_POINT_PRIMS
+    const ivec2 TileXY = ivec2(TileID % BoardWidth, TileID / BoardWidth);
+    vec2 DepthMinMax = texelFetch(DepthRange, TileXY, 0).xy;
     if (DepthMinMax.y == 0)
     {
         // Discard!
@@ -65,9 +68,8 @@ void main()
     }
     else
     {
-        const vec2 TileSize = vec2(2.0) / vec2(BoardWidth, BoardHeight);
-        const vec2 Low = vec2(TileX, TileY) * TileSize - 1.0;
-        const vec2 Center = TileSize * 0.5 + Low;
+        const vec2 Center = vec2(TileXY * 8 + 4) * ScreenSize.zw * 2.0 - 1.0;
+        const vec2 HalfTile = vec2(8.0, 8.0) * ScreenSize.zw;
         DepthMinMax = 1.0 / DepthMinMax;
         const float Depth = (DepthMinMax.x + DepthMinMax.y) * 0.5;
         const float Diameter = distance(DepthMinMax.x, DepthMinMax.y);
@@ -77,14 +79,19 @@ void main()
         const vec3 Extent = Diameter * 0.5 + ShadowCaster.ShapeParams.xyz;
         if (CubeTrace(Extent, Ray) >= 0.0)
         {
+#if ALLOW_POINT_PRIMS
+            gl_Position = vec4(Center.xy, 0.0, 1.0);
+#else
             int VertexId = gl_VertexID % 6;
             vec2 Alpha = vec2(float(((VertexId % 3) & 1) << 2), float(((VertexId % 3) & 2) << 1)) * 0.25;
 	        if (VertexId > 2)
 	        {
 		        Alpha = 1.0 - Alpha;
             }
-            const vec2 High = Low + TileSize;
+            const vec2 Low = Center - HalfTile;
+            const vec2 High = Center + HalfTile;
 	        gl_Position = vec4(mix(Low, High, Alpha), 0.0, 1.0);
+#endif // ALLOW_POINT_PRIMS
         }
         else
         {

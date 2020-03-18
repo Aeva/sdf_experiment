@@ -385,6 +385,16 @@ void AllocateRenderTargets(bool bErase = false)
 
 StatusCode SDFExperiment::Setup()
 {
+#if ALLOW_POINT_PRIMS
+	{
+		float PointRange[2] = { 0 };
+		glGetFloatv(GL_POINT_SIZE_RANGE, &(PointRange[0]));
+		std::cout << "Point Diameter Range: \n"
+			<< " - min: " << PointRange[0] << "\n"
+			<< " - max: " << PointRange[1] << "\n";
+	}
+#endif // ALLOW_POINT_PRIMS
+
 #if GL_NV_mesh_shader
 	if (GLAD_GL_NV_mesh_shader)
 	{
@@ -787,9 +797,14 @@ void RenderGloom(const size_t ShadowCastersCount)
 	const int GroupsY = DIV_UP(int(ScreenHeight), 8);
 	const int Tiles = GroupsX * GroupsY;
 	const int Triangles = 6 * Tiles;
+#define USE_POINTS ALLOW_POINT_PRIMS
 #else
 	const int Triangles = 3;
 #endif
+
+#if USE_POINTS
+	glPointSize(8.0);
+#endif // USE_POINTS
 
 	// Cast Shadows
 	if (ShadowCastersCount > 0)
@@ -797,13 +812,18 @@ void RenderGloom(const size_t ShadowCastersCount)
 #if PROFILING
 		glBeginQuery(GL_TIME_ELAPSED, GloomPassTime);
 #endif
+#if USE_POINTS
+		glDrawArraysInstanced(GL_POINTS, 0, Tiles, ShadowCastersCount);
+#else
 		glDrawArraysInstanced(GL_TRIANGLES, 0, Triangles, ShadowCastersCount);
+#endif // USE_POINTS
 #if PROFILING
 		glEndQuery(GL_TIME_ELAPSED);
 #endif
 	}
 	glDisable(GL_BLEND);
 	glPopDebugGroup();
+#undef USE_POINTS
 }
 
 

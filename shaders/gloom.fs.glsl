@@ -74,18 +74,20 @@ void main()
 		OutTransmission = 1.0;
 #endif // ENABLE_LIGHT_TRANSMISSION
 	}
-
-	const vec3 RayDir = normalize(vec3(SUN_DIR));
-	const RayData Ray = GetOcclusionRay(Position, RayDir);
+	else
+	{
+		const vec3 RayDir = normalize(vec3(SUN_DIR));
+		const RayData Ray = GetOcclusionRay(Position, RayDir);
 
 #if ENABLE_LIGHT_TRANSMISSION
-	if (ShapeIsTransmissive(ShadowCaster.ShapeParams))
-	{
-		OutTransmission = TransmissiveSearch(ShadowCaster, Ray);
-	}
-	else
+		if (ShapeIsTransmissive(ShadowCaster.ShapeParams))
+		{
+			OutTransmission = TransmissiveSearch(ShadowCaster, Ray);
+		}
+		else
 #endif // ENABLE_LIGHT_TRANSMISSION
-	{
-		OutTransmission = OcclusionRayMarch(ShadowCaster, Ray);
+		{
+			OutTransmission = OcclusionRayMarch(ShadowCaster, Ray);
+		}
 	}
 }

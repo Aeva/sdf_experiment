@@ -71,6 +71,8 @@
 #define GL_NV_mesh_shader ENABLE_CUBETRACE && 0
 #endif
 
+#define ALLOW_POINT_PRIMS 0
+
 #define ENABLE_TILED_GLOOM ENABLE_CUBETRACE
 
 // ----------------
