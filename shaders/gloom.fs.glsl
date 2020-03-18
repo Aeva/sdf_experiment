@@ -87,7 +87,7 @@ void main()
 		else
 #endif // ENABLE_LIGHT_TRANSMISSION
 		{
-			OutTransmission = OcclusionRayMarch(ShadowCaster, Ray);
+			OutTransmission = OcclusionSearch(ShadowCaster, Ray);
 		}
 	}
 }

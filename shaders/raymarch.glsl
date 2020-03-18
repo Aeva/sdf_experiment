@@ -186,27 +186,35 @@ bool RayMarch(ObjectInfo Object, RayData Ray, out vec3 Position)
 #endif //ENABLE_CUBETRACE
 
 
-TRANSMISSION_TYPE OcclusionRayMarch(ObjectInfo Object, const RayData Ray)
+TRANSMISSION_TYPE OcclusionSearch(ObjectInfo Object, const RayData Ray)
 {
 #if ENABLE_CUBETRACE
 	float Distance = CubeTrace(Object.ShapeParams.xyz, Ray);
 	if (Distance >= 0.0)
 #endif // ENABLE_CUBETRACE
 	{
-		float Travel = 0.1;
-		const float MaxTravel = length(Ray.LocalStart) + length(Object.ShapeParams.xyz);
-		for (int Step = 0; Step <= MaxIterations; ++Step)
+		float Forward = 0.0;
+		float Backward = length(Ray.LocalStart) + length(Object.ShapeParams.xyz);
+		for (int Step = 0; Step <= CoarserMaxIterations; ++Step)
 		{
-			const float SDF = SceneHull(Object.ShapeParams, Ray.LocalDir * Travel + Ray.LocalStart);
-			Travel += SDF;
+			Forward += SceneHull(Object.ShapeParams, Ray.LocalDir * Forward + Ray.LocalStart);
+			Backward -= SceneHull(Object.ShapeParams, Ray.LocalDir * Backward + Ray.LocalStart);
+			if (Forward >= Backward)
+			{
+				return TRANSMISSION_TYPE(1.0);
+			}
+		}
+
+		const float StepSize = (Backward - Forward) / float(CoarserMaxIterations);
+		float Seek = Forward;
+		for (int Step = 0; Step <= CoarserMaxIterations; ++Step)
+		{
+			const float SDF = SceneHull(Object.ShapeParams, Ray.LocalDir * Seek + Ray.LocalStart);
 			if (IS_SOLID(SDF))
 			{
 				return TRANSMISSION_TYPE(0.0);
 			}
-			else if (Travel >= MaxTravel)
-			{
-				return TRANSMISSION_TYPE(1.0);
-			}
+			Seek += StepSize;
 		}
 	}
 	return TRANSMISSION_TYPE(1.0);
