@@ -13,6 +13,9 @@
     <Filter Include="LodePNG">
       <UniqueIdentifier>{229aa8d4-84f3-4a05-a3c1-69d3bb4c5820}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shaders\tessellation_test">
+      <UniqueIdentifier>{ede94391-3194-446c-9600-d7b50b4381a1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\glue\errors.cpp">
@@ -121,6 +124,18 @@
     </None>
     <None Include="..\shaders\range.cs.glsl">
       <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\tessellation_test\test.fs.glsl">
+      <Filter>shaders\tessellation_test</Filter>
+    </None>
+    <None Include="..\shaders\tessellation_test\test.tcs.glsl">
+      <Filter>shaders\tessellation_test</Filter>
+    </None>
+    <None Include="..\shaders\tessellation_test\test.tes.glsl">
+      <Filter>shaders\tessellation_test</Filter>
+    </None>
+    <None Include="..\shaders\tessellation_test\test.vs.glsl">
+      <Filter>shaders\tessellation_test</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -171,6 +171,10 @@
     <None Include="..\shaders\scene.glsl" />
     <None Include="..\shaders\screen.glsl" />
     <None Include="..\shaders\shapes.glsl" />
+    <None Include="..\shaders\tessellation_test\test.fs.glsl" />
+    <None Include="..\shaders\tessellation_test\test.tcs.glsl" />
+    <None Include="..\shaders\tessellation_test\test.tes.glsl" />
+    <None Include="..\shaders\tessellation_test\test.vs.glsl" />
     <None Include="..\shaders\text.fs.glsl" />
     <None Include="..\shaders\text.vs.glsl" />
     <None Include="..\shaders\view.glsl" />

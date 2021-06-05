@@ -196,6 +196,9 @@ const std::string GetShaderExtensions(GLenum ShaderType)
 		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
 		"#extension GL_ARB_shading_language_420pack : require\n";
 
+	static const std::string TessellationExtensions = \
+		"#extension GL_ARB_gpu_shader5 : require\n";
+
 	static const std::string FragmentExtensions = \
 		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
 		"#extension GL_ARB_shader_image_load_store : require\n" \
@@ -215,24 +218,23 @@ const std::string GetShaderExtensions(GLenum ShaderType)
 		"#extension GL_NV_mesh_shader : require\n";
 #endif
 
-	if (ShaderType == GL_VERTEX_SHADER)
+	switch (ShaderType)
 	{
+	case GL_VERTEX_SHADER:
 		return Version + VertexExtensions;
-	}
-	else if (ShaderType == GL_FRAGMENT_SHADER)
-	{
+
+	case GL_FRAGMENT_SHADER:
 		return Version + FragmentExtensions;
-	}
-	else if (ShaderType == GL_MESH_SHADER_NV)
-	{
+
+	case GL_TESS_CONTROL_SHADER:
+	case GL_TESS_EVALUATION_SHADER:
+		return Version + TessellationExtensions;
+
+	case GL_TASK_SHADER_NV:
+	case GL_MESH_SHADER_NV:
 		return Version + MeshExtensions;
-	}
-	else if (ShaderType == GL_TASK_SHADER_NV)
-	{
-		return Version + MeshExtensions;
-	}
-	else
-	{
+
+	default:
 		return Version + ComputeExtensions;
 	}
 }
