@@ -1,8 +1,25 @@
-
 #include <iostream>
 #include "errors.h"
 #include "gl_boilerplate.h"
+
+#if BUILD_SDF_EXPERIMENT
 #include "../sdf_experiment.h"
+
+#if PROFILING
+#define SETUP_FN() TextRendering::Setup()
+#else
+#define SETUP_FN() SDFExperiment::Setup()
+#endif
+#define RENDER_FN(Frame) SDFExperiment::Render(Frame)
+#define WINDOW_DIRTY_FN() SDFExperiment::WindowIsDirty()
+
+#elif BUILD_TESSELLATRON
+#include "../tessellatron.h"
+#define SETUP_FN() Tessellatron::Setup()
+#define RENDER_FN(Frame) Tessellatron::Render(Frame)
+#define WINDOW_DIRTY_FN() Tessellatron::WindowIsDirty()
+#endif
+
 #include "../shaders/defs.glsl"
 #if PROFILING
 #include "logging.h"
@@ -166,10 +183,7 @@ StatusCode SetupGLFW()
 StatusCode DemoSetup ()
 {
 	glUseProgram(0);
-	RETURN_ON_FAIL(SDFExperiment::Setup());
-#if PROFILING
-	RETURN_ON_FAIL(TextRendering::Setup());
-#endif //PROFILING
+	RETURN_ON_FAIL(SETUP_FN());
 	return StatusCode::PASS;
 }
 
@@ -198,7 +212,7 @@ void DrawFrame()
 
 	if (WindowIsDirty)
 	{
-		SDFExperiment::WindowIsDirty();
+		WINDOW_DIRTY_FN();
 		WindowIsDirty = false;
 	}
 
@@ -212,7 +226,7 @@ void DrawFrame()
 	{
 		const double Start = glfwGetTime();
 #endif
-		SDFExperiment::Render(FrameCounter);
+		RENDER_FN(FrameCounter);
 #if PROFILING
 		TextRendering::Render(FrameCounter);
 		RenderTimeMS[FrameCounter % StatSamples] = (glfwGetTime() - Start) * 1000.0;
