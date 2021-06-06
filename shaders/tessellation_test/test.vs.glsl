@@ -1,21 +1,27 @@
+prepend: shaders/tessellation_test/icosphere.glsl
+prepend: shaders/tessellation_test/sdf.glsl
 --------------------------------------------------------------------------------
 
 out gl_PerVertex
 {
-  vec4 gl_Position;
-  float gl_PointSize;
-  float gl_ClipDistance[];
+	vec4 gl_Position;
+	float gl_PointSize;
+	float gl_ClipDistance[];
+};
+
+
+out VS_Out
+{
+	vec3 Normal;
 };
 
 
 void main()
 {
-	const vec4 Verts[3] = {
-		vec4(-0.9, -0.75, 0.0, 1.0),
-		vec4(0.0, 0.8, 0.0, 1.0),
-		vec4(0.9, -0.75, 0.0, 1.0)
-	};
-	gl_Position = Verts[gl_VertexID];
-	//gl_Position = vec4(-1.0 + float((gl_VertexID & 1) << 2), -1.0 + float((gl_VertexID & 2) << 1), 0, 1);
+	int Face = gl_VertexID / 3;
+	int Vert = gl_VertexID % 3;
+	Normal = Normals[NormalIndexes[Face][Vert]];
+	gl_Position = vec4(Vertices[VertexIndexes[Face][Vert]], 1.0);
+	Coarse(gl_Position.xyz, Normal);
 }
 

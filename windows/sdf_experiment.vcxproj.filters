@@ -137,5 +137,11 @@
     <None Include="..\shaders\tessellation_test\test.vs.glsl">
       <Filter>shaders\tessellation_test</Filter>
     </None>
+    <None Include="..\shaders\tessellation_test\icosphere.glsl">
+      <Filter>shaders\tessellation_test</Filter>
+    </None>
+    <None Include="..\shaders\tessellation_test\sdf.glsl">
+      <Filter>shaders\tessellation_test</Filter>
+    </None>
   </ItemGroup>
 </Project>
