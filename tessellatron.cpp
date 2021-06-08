@@ -13,11 +13,18 @@ using namespace glm;
 ShaderPipeline TestShader;
 
 Buffer Camera("Camera");
+Buffer Spheres;
 
 const GLuint FinalPass = 0;
 
 
 #define USE_TESSELATION 1
+
+
+struct ObjectUpload
+{
+	vec4 SphereParams[2];
+};
 
 
 struct CameraUpload
@@ -70,8 +77,9 @@ void Tessellatron::WindowIsDirty()
 
 void Tessellatron::Render(const int FrameCounter)
 {
+	double Time = glfwGetTime();
 	{
-		const vec3 CameraOrigin = vec3(2.0, 2.0, 2.0);
+		const vec3 CameraOrigin = vec3(0.0, 5.0, 0.0);
 		const vec3 CameraFocus = vec3(0.0, 0.0, 0.0);
 		const vec3 UpVector = vec3(0.0, 0.0, 1.0);
 		const mat4 WorldToView = lookAt(CameraOrigin, CameraFocus, UpVector);
@@ -90,9 +98,16 @@ void Tessellatron::Render(const int FrameCounter)
 			ViewToWorld,
 			ViewToClip,
 			ClipToView,
-			vec4(CameraOrigin, 0.0)
+			vec4(CameraOrigin, Time)
 		};
 		Camera.Upload((void*)&BufferData, sizeof(BufferData));
+	}
+	{
+		ObjectUpload BufferData;
+		double Offset = sin(Time * 1.5) * 0.5 + 0.85;
+		BufferData.SphereParams[0] = vec4(Offset, 0.0, 0.0, 1.0);
+		BufferData.SphereParams[1] = vec4(-Offset, 0.0, 0.0, 0.9);
+		Spheres.Upload((void*)&BufferData, sizeof(BufferData));
 	}
 
 	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Tessellation Test Pass");
@@ -102,12 +117,13 @@ void Tessellatron::Render(const int FrameCounter)
 	glClearColor(0.25, 0.25, 0.25, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	Spheres.Bind(GL_UNIFORM_BUFFER, 1);
 	Camera.Bind(GL_UNIFORM_BUFFER, 2);
 
 #if USE_TESSELATION
 	glPatchParameteri(GL_PATCH_VERTICES, 3);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glDrawArrays(GL_PATCHES, 0, 20 * 3);
+	glDrawArraysInstanced(GL_PATCHES, 0, 20 * 3, 2);
 #else
 	glDrawArrays(GL_TRIANGLES, 0, 20 * 3);
 #endif

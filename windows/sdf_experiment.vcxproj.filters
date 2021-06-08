@@ -143,5 +143,8 @@
     <None Include="..\shaders\tessellation_test\sdf.glsl">
       <Filter>shaders\tessellation_test</Filter>
     </None>
+    <None Include="..\shaders\tessellation_test\objects.glsl">
+      <Filter>shaders\tessellation_test</Filter>
+    </None>
   </ItemGroup>
 </Project>

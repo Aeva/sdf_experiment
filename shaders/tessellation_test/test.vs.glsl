@@ -13,18 +13,17 @@ out gl_PerVertex
 
 out VS_Out
 {
-	vec3 Position;
 	vec3 Normal;
 };
 
 
 void main()
 {
+	vec4 Sphere = SphereParams[gl_InstanceID];
 	int Face = gl_VertexID / 3;
 	int Vert = gl_VertexID % 3;
 	Normal = Normals[NormalIndexes[Face][Vert]];
-	Position = Vertices[VertexIndexes[Face][Vert]];
-	gl_Position = vec4(Position, 1.0);
+	vec3 Vertex = Vertices[VertexIndexes[Face][Vert]];
+	gl_Position = vec4(Vertex * Sphere.w + Sphere.xyz, 1.0);
 	Coarse(gl_Position.xyz, Normal);
 }
-

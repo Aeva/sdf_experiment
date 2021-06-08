@@ -1,3 +1,4 @@
+prepend: shaders/tessellation_test/objects.glsl
 --------------------------------------------------------------------------------
 
 #define EPSILON 0.0001
@@ -8,9 +9,11 @@
 #define FINE_ITERATIONS 4
 
 
-float Sphere(vec3 p, float s)
+float Sphere(vec3 Point, int SphereID)
 {
-	return length(p) - s;
+	vec3 Translate = SphereParams[SphereID].xyz;
+	float Radius = SphereParams[SphereID].w;
+	return length(Point - Translate) - Radius;
 }
 
 
@@ -23,7 +26,10 @@ float SmoothUnion(float d1, float d2, float k)
 
 float SceneFn(vec3 Point)
 {
-	return Sphere(Point, 1.0);
+	return SmoothUnion(
+		Sphere(Point, 0),
+		Sphere(Point, 1),
+		0.6);
 }
 
 
@@ -51,16 +57,19 @@ void Coarse(inout vec3 Position, inout vec3 Normal)
 {
 	for (int i=0; i<COARSE_ITERATIONS; ++i)
 	{
+		Normal = normalize(mix(Normal, Gradient(Position), 0.5));
 		Position -= Normal * SceneFn(Position);
-		Normal = normalize(Gradient(Position));
 	}
 }
 
 void Fine(inout vec3 Position, inout vec3 Normal)
 {
+	vec3 Grade = Normal;
 	for (int i=0; i<FINE_ITERATIONS; ++i)
 	{
+		Grade = Gradient(Position);
+		Normal = normalize(mix(Normal, Grade, 0.5));
 		Position -= Normal * SceneFn(Position);
-		Normal = normalize(Gradient(Position));
 	}
+	Normal = Grade;
 }

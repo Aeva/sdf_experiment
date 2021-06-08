@@ -12,7 +12,6 @@ in gl_PerVertex
 
 in TCS_Out
 {
-	vec3 Position;
 	vec3 Normal;
 } tes_in[];
 
