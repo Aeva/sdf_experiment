@@ -1,4 +1,5 @@
 prepend: shaders/tessellation_test/sdf.glsl
+prepend: shaders/view.glsl
 --------------------------------------------------------------------------------
 
 in gl_PerVertex
@@ -11,6 +12,7 @@ in gl_PerVertex
 
 in TCS_Out
 {
+	vec3 Position;
 	vec3 Normal;
 } tes_in[];
 
@@ -44,6 +46,5 @@ void main()
 		gl_TessCoord.z * tes_in[2].Normal);
 
 	Fine(Position.xyz, Normal);
-	gl_Position = Position;
-	gl_Position.z = 1.0 - (gl_Position.z * 0.5 + 0.5);
+	gl_Position = ViewToClip * WorldToView * Position;
 }

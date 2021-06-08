@@ -7,13 +7,27 @@
 #include <cstdlib>
 #include <iostream>
 
+using namespace glm;
+
 
 ShaderPipeline TestShader;
+
+Buffer Camera("Camera");
 
 const GLuint FinalPass = 0;
 
 
 #define USE_TESSELATION 1
+
+
+struct CameraUpload
+{
+	mat4 WorldToView;
+	mat4 ViewToWorld;
+	mat4 ViewToClip;
+	mat4 ClipToView;
+	vec4 CameraOrigin;
+};
 
 
 StatusCode Tessellatron::Setup()
@@ -41,7 +55,7 @@ StatusCode Tessellatron::Setup()
 	glDepthFunc(GL_GREATER);
 	glClearDepth(0.0);
 	glDepthRange(1.0, 0.0);
-	glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
+	glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
 	glEnable(GL_CULL_FACE);
 	glFrontFace(GL_CCW);
 	return StatusCode::PASS;
@@ -56,12 +70,39 @@ void Tessellatron::WindowIsDirty()
 
 void Tessellatron::Render(const int FrameCounter)
 {
+	{
+		const vec3 CameraOrigin = vec3(2.0, 2.0, 2.0);
+		const vec3 CameraFocus = vec3(0.0, 0.0, 0.0);
+		const vec3 UpVector = vec3(0.0, 0.0, 1.0);
+		const mat4 WorldToView = lookAt(CameraOrigin, CameraFocus, UpVector);
+		const mat4 ViewToWorld = inverse(WorldToView);
+
+		float ScreenWidth;
+		float ScreenHeight;
+		GetScreenSize(&ScreenWidth, &ScreenHeight);
+
+		const float AspectRatio = ScreenWidth / ScreenHeight;
+		const mat4 ViewToClip = infinitePerspective(radians(45.f), AspectRatio, 1.0f);
+		const mat4 ClipToView = inverse(ViewToClip);
+
+		CameraUpload BufferData = {
+			WorldToView,
+			ViewToWorld,
+			ViewToClip,
+			ClipToView,
+			vec4(CameraOrigin, 0.0)
+		};
+		Camera.Upload((void*)&BufferData, sizeof(BufferData));
+	}
+
 	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Tessellation Test Pass");
 	glBindFramebuffer(GL_FRAMEBUFFER, FinalPass);
 
 	TestShader.Activate();
 	glClearColor(0.25, 0.25, 0.25, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	Camera.Bind(GL_UNIFORM_BUFFER, 2);
 
 #if USE_TESSELATION
 	glPatchParameteri(GL_PATCH_VERTICES, 3);
