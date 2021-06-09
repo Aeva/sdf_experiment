@@ -18,12 +18,10 @@ Buffer Spheres;
 const GLuint FinalPass = 0;
 
 
-#define USE_TESSELATION 1
-
-
+#define OBJECT_COUNT 3
 struct ObjectUpload
 {
-	vec4 SphereParams[2];
+	vec4 SphereParams[OBJECT_COUNT];
 };
 
 
@@ -39,19 +37,13 @@ struct CameraUpload
 
 StatusCode Tessellatron::Setup()
 {
-#if USE_TESSELATION
 	RETURN_ON_FAIL(TestShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/tessellation_test/test.vs.glsl"},
 		  {GL_TESS_CONTROL_SHADER, "shaders/tessellation_test/test.tcs.glsl"},
 		  {GL_TESS_EVALUATION_SHADER, "shaders/tessellation_test/test.tes.glsl"},
+		  {GL_GEOMETRY_SHADER, "shaders/tessellation_test/test.gs.glsl"},
 		  {GL_FRAGMENT_SHADER, "shaders/tessellation_test/test.fs.glsl"} },
 		"Tessellation Test"));
-#else
-	RETURN_ON_FAIL(TestShader.Setup(
-		{ {GL_VERTEX_SHADER, "shaders/tessellation_test/test.vs.glsl"},
-		  {GL_FRAGMENT_SHADER, "shaders/tessellation_test/test.fs.glsl"} },
-		"Tessellation Test"));
-#endif
 
 	// Cheese opengl into letting us draw triangles without any data.
 	GLuint vao;
@@ -107,6 +99,7 @@ void Tessellatron::Render(const int FrameCounter)
 		double Offset = sin(Time * 1.5) * 0.5 + 0.85;
 		BufferData.SphereParams[0] = vec4(Offset, 0.0, 0.0, 1.0);
 		BufferData.SphereParams[1] = vec4(-Offset, 0.0, 0.0, 0.9);
+		BufferData.SphereParams[2] = vec4(0.0, 0.5, 0.85, -0.9);
 		Spheres.Upload((void*)&BufferData, sizeof(BufferData));
 	}
 
@@ -120,13 +113,9 @@ void Tessellatron::Render(const int FrameCounter)
 	Spheres.Bind(GL_UNIFORM_BUFFER, 1);
 	Camera.Bind(GL_UNIFORM_BUFFER, 2);
 
-#if USE_TESSELATION
 	glPatchParameteri(GL_PATCH_VERTICES, 3);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glDrawArraysInstanced(GL_PATCHES, 0, 20 * 3, 2);
-#else
-	glDrawArrays(GL_TRIANGLES, 0, 20 * 3);
-#endif
+	glDrawArraysInstanced(GL_PATCHES, 0, 20 * 3, OBJECT_COUNT);
 
 	glPopDebugGroup();
 }

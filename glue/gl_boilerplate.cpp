@@ -228,6 +228,7 @@ const std::string GetShaderExtensions(GLenum ShaderType)
 
 	case GL_TESS_CONTROL_SHADER:
 	case GL_TESS_EVALUATION_SHADER:
+	case GL_GEOMETRY_SHADER:
 		return Version + TessellationExtensions;
 
 	case GL_TASK_SHADER_NV:
