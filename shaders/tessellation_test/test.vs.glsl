@@ -29,6 +29,11 @@ void main()
 	}
 	Normal = Normals[NormalIndexes[Face][Vert]];
 	vec3 Vertex = Vertices[VertexIndexes[Face][Vert]];
+	if (CutShape > -1)
+	{
+		Normal *= -1.0;
+		Vertex *= 1.5;
+	}
 	gl_Position = vec4(Vertex * abs(Sphere.w) + Sphere.xyz, 1.0);
 	if (CutShape > -1)
 	{
