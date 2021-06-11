@@ -12,16 +12,16 @@ using namespace glm;
 
 ShaderPipeline TestShader;
 
+Buffer Screen("Screen");
 Buffer Camera("Camera");
 Buffer Spheres;
 
 const GLuint FinalPass = 0;
 
 
-#define OBJECT_COUNT 3
-struct ObjectUpload
+struct ScreenUpload
 {
-	vec4 SphereParams[OBJECT_COUNT];
+	vec4 ScreenSize;
 };
 
 
@@ -35,8 +35,30 @@ struct CameraUpload
 };
 
 
+#define OBJECT_COUNT 3
+struct ObjectUpload
+{
+	vec4 SphereParams[OBJECT_COUNT];
+};
+
+
+void UpdateScreenInfo()
+{
+	float ScreenWidth;
+	float ScreenHeight;
+	GetScreenSize(&ScreenWidth, &ScreenHeight);
+	ScreenUpload BufferData = {
+		vec4(ScreenWidth, ScreenHeight, 1.0f / ScreenWidth, 1.0f / ScreenHeight),
+	};
+	Screen.Upload((void*)&BufferData, sizeof(BufferData));
+	glViewport(0, 0, ScreenWidth, ScreenHeight);
+}
+
+
 StatusCode Tessellatron::Setup()
 {
+	UpdateScreenInfo();
+
 	RETURN_ON_FAIL(TestShader.Setup(
 		{ {GL_VERTEX_SHADER, "shaders/tessellation_test/test.vs.glsl"},
 		  {GL_TESS_CONTROL_SHADER, "shaders/tessellation_test/test.tcs.glsl"},
@@ -63,7 +85,7 @@ StatusCode Tessellatron::Setup()
 
 void Tessellatron::WindowIsDirty()
 {
-
+	UpdateScreenInfo();
 }
 
 
@@ -110,8 +132,9 @@ void Tessellatron::Render(const int FrameCounter)
 	glClearColor(0.25, 0.25, 0.25, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	Spheres.Bind(GL_UNIFORM_BUFFER, 1);
+	Screen.Bind(GL_UNIFORM_BUFFER, 1);
 	Camera.Bind(GL_UNIFORM_BUFFER, 2);
+	Spheres.Bind(GL_UNIFORM_BUFFER, 3);
 
 	glPatchParameteri(GL_PATCH_VERTICES, 3);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
