@@ -1,7 +1,5 @@
 prepend: shaders/tessellation_test/icosphere.glsl
 prepend: shaders/tessellation_test/sdf.glsl
-prepend: shaders/screen.glsl
-prepend: shaders/view.glsl
 --------------------------------------------------------------------------------
 
 out gl_PerVertex

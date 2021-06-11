@@ -14,6 +14,7 @@ in TCS_Out
 {
 	vec3 Normal;
 	int CutShape;
+	vec2 Scratch;
 } tes_in[];
 
 
@@ -48,7 +49,6 @@ void main()
 
 	CutShape = tes_in[0].CutShape;
 
-	bool Degenerate = false;
 	if (CutShape > -1)
 	{
 		FineCut(Position.xyz, Normal, CutShape);
@@ -57,5 +57,5 @@ void main()
 	{
 		Fine(Position.xyz, Normal);
 	}
-	gl_Position = ViewToClip * WorldToView * Position;
+	gl_Position = ViewToClip * WorldToView * vec4(Position.xyz, 1.0);
 }

@@ -27,7 +27,7 @@ out gl_PerVertex
 
 out GS_OUT
 {
-	vec4 Position;
+	vec3 Position;
 	int CutShape;
 } gs_out;
 
@@ -41,7 +41,7 @@ void main()
 	bool Keep = false;
 	for (int i = 0; i < 3; ++i)
 	{
-		if (!(SceneCutFn(gs_in[i].Position.xyz) > 0.01))
+		if (!(SceneCutFn(gs_in[i].Position.xyz) > 0.00001))
 		{
 			Keep = true;
 			break;
@@ -52,7 +52,7 @@ void main()
 		for (int i = 0; i < 3; ++i)
 		{
 			gl_Position = gl_in[i].gl_Position;
-			gs_out.Position = gs_in[i].Position;
+			gs_out.Position = gs_in[i].Position.xyz;
 			gs_out.CutShape = gs_in[i].CutShape;
 			EmitVertex();
 		}

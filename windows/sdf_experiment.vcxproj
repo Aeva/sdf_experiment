@@ -175,6 +175,7 @@
     <None Include="..\shaders\tessellation_test\objects.glsl" />
     <None Include="..\shaders\tessellation_test\sdf.glsl" />
     <None Include="..\shaders\tessellation_test\test.fs.glsl" />
+    <None Include="..\shaders\tessellation_test\test.gs.glsl" />
     <None Include="..\shaders\tessellation_test\test.tcs.glsl" />
     <None Include="..\shaders\tessellation_test\test.tes.glsl" />
     <None Include="..\shaders\tessellation_test\test.vs.glsl" />
