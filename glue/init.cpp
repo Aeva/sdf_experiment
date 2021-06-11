@@ -123,10 +123,11 @@ StatusCode SetupGLFW()
 		std::cout << "Failed to initialize OpenGL context" << std::endl;
 		return StatusCode::FAIL;
 	}
-	else
-	{
-		std::cout << "Found OpenGL version " << GLVersion.major << "." << GLVersion.minor << "\n";
-	}
+
+	std::cout << "API: OpenGL " << GLVersion.major << "." << GLVersion.minor << "\n";
+	std::cout << "Vendor: " << glGetString(GL_VENDOR) << "\n";
+	std::cout << "Device: " << glGetString(GL_RENDERER) << "\n";
+	std::cout << "Version: " << glGetString(GL_VERSION) << '\n';
 
 #if DEBUG_BUILD
 	if (GLAD_GL_ARB_debug_output)
@@ -151,8 +152,6 @@ StatusCode SetupGLFW()
 	}
 #endif
 
-	std::cout << glGetString(GL_VERSION) << '\n';
-
 	GLint MaxVertexSSBOs;
 	glGetIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &MaxVertexSSBOs);
 	GLint MaxFragmentSSBOs;
@@ -160,19 +159,19 @@ StatusCode SetupGLFW()
 	GLint MaxComputeSSBOs;
 	glGetIntegerv(GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, &MaxComputeSSBOs);
 	std::cout << "Max Vertex SSBO Blocks: " << MaxVertexSSBOs << '\n'
-    	<< "Max Fragment SSBO Blocks: " << MaxFragmentSSBOs << '\n'
+		<< "Max Fragment SSBO Blocks: " << MaxFragmentSSBOs << '\n'
 		<< "Max Compute SSBO Blocks: " << MaxComputeSSBOs << '\n';
 
 #if RENDERDOC_CAPTURE_AND_QUIT
 	if(void *mod = dlopen("librenderdoc.so", RTLD_NOW | RTLD_NOLOAD))
 	{
-    	pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)dlsym(mod, "RENDERDOC_GetAPI");
-    	int RenderdocStatus = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void **)&rdoc_api);
-    	if (RenderdocStatus != 1)
-    	{
-    		std::cout << "Could not initialize RenderDoc.\n";
-    		return StatusCode::FAIL;
-    	}
+		pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)dlsym(mod, "RENDERDOC_GetAPI");
+		int RenderdocStatus = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void **)&rdoc_api);
+		if (RenderdocStatus != 1)
+		{
+			std::cout << "Could not initialize RenderDoc.\n";
+			return StatusCode::FAIL;
+		}
 	}
 #endif
 
