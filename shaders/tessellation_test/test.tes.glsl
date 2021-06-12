@@ -14,7 +14,7 @@ in TCS_Out
 {
 	vec3 Normal;
 	int CutShape;
-	vec2 Scratch;
+	vec3 Scratch;
 } tes_in[];
 
 
