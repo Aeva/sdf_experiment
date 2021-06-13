@@ -27,9 +27,9 @@ void main()
 	tcs_out[gl_InvocationID].Normal = tcs_in[gl_InvocationID].Normal;
 	tcs_out[gl_InvocationID].CutShape = tcs_in[gl_InvocationID].CutShape;
 
-	gl_TessLevelOuter[gl_InvocationID] = 10.0;
+	gl_TessLevelOuter[gl_InvocationID] = 7.0;
 	if (gl_InvocationID == 0)
 	{
-		gl_TessLevelInner[0] = 10.0;
+		gl_TessLevelInner[0] = 7.0;
 	}
 }

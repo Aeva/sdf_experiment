@@ -14,6 +14,7 @@ in TES_IN
 out TES_OUT
 {
 	vec4 Position;
+	vec3 Barycenter;
 	int CutShape;
 };
 
@@ -23,6 +24,7 @@ layout (triangles, equal_spacing, ccw) in;
 
 void main()
 {
+	Barycenter = gl_TessCoord;
 	Position = (
 		gl_TessCoord.x * gl_in[0].gl_Position +
 		gl_TessCoord.y * gl_in[1].gl_Position +

@@ -3,6 +3,7 @@ prepend: shaders/view.glsl
 --------------------------------------------------------------------------------
 
 #define VISUALIZE_PRECISION 0
+#define VISUALIZE_PRIMITIVE 1
 #define ALLOW_DISCARD 0
 
 layout(location = 0) out vec4 OutColor;
@@ -12,6 +13,8 @@ in vec4 gl_FragCoord;
 in TES_OUT
 {
 	vec3 Position;
+	vec3 Barycenter;
+	vec3 SubBarycenter;
 	flat int CutShape;
 };
 
@@ -63,8 +66,23 @@ void main ()
 #endif
 #if VISUALIZE_PRECISION
 	OutColor = vec4(VisualizePrecision(), 1.0);
+#elif VISUALIZE_PRIMITIVE
+	if (Barycenter.x < 0.005 || Barycenter.y < 0.005 || Barycenter.z < 0.005)
+	{
+		OutColor = vec4(0.0, 0.0, 0.0, 1.0);
+	}
+	else if (SubBarycenter.x < 0.02 || SubBarycenter.y < 0.02 || SubBarycenter.z < 0.02)
+	{
+		OutColor = vec4(0.0, 0.0, 1.0, 1.0);
+	}
+	else
+	{
+		OutColor = vec4(0.85, 0.85, 0.85, 1.0);
+	}
 #else
-	vec3 Normal = normalize(GradientFinal(Position));
-	OutColor = vec4((Normal + 1.0) * 0.5, 1.0);
+	{
+		vec3 Normal = normalize(GradientFinal(Position));
+		OutColor = vec4((Normal + 1.0) * 0.5, 1.0);
+	}
 #endif
 }
