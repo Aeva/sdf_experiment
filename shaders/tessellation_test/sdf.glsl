@@ -64,8 +64,6 @@ vec3 Gradient(vec3 Point)
 		SceneFn(Point - Fnord.yzx));
 
 	return (High - Low) / (2.0 * EPSILON);
-
-	return vec3(0.0);
 }
 
 
@@ -84,8 +82,6 @@ vec3 GradientCut(vec3 Point, int SphereID)
 		Sphere(Point - Fnord.yzx, SphereID));
 
 	return (High - Low) / (2.0 * EPSILON);
-
-	return vec3(0.0);
 }
 
 
@@ -104,8 +100,6 @@ vec3 GradientFinal(vec3 Point)
 		SceneCutFn(Point - Fnord.yzx));
 
 	return (High - Low) / (2.0 * EPSILON);
-
-	return vec3(0.0);
 }
 
 

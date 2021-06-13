@@ -41,6 +41,8 @@ struct Buffer
 	Buffer(const char* InDebugName = nullptr);
 	~Buffer();
 	void Release();
+	void Reserve(size_t Bytes);
 	void Upload(void* Data, size_t Bytes);
 	void Bind(GLenum Target, GLuint BindingIndex);
+	void Bind(GLenum Target);
 };

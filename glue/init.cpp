@@ -154,11 +154,20 @@ StatusCode SetupGLFW()
 
 	GLint MaxVertexSSBOs;
 	glGetIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &MaxVertexSSBOs);
+	GLint MaxControlSSBOs;
+	glGetIntegerv(GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, &MaxControlSSBOs);
+	GLint MaxEvalSSBOs;
+	glGetIntegerv(GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, &MaxEvalSSBOs);
+	GLint MaxGeometrySSBOs;
+	glGetIntegerv(GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS, &MaxGeometrySSBOs);
 	GLint MaxFragmentSSBOs;
 	glGetIntegerv(GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS, &MaxFragmentSSBOs);
 	GLint MaxComputeSSBOs;
 	glGetIntegerv(GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, &MaxComputeSSBOs);
 	std::cout << "Max Vertex SSBO Blocks: " << MaxVertexSSBOs << '\n'
+		<< "Max Tessellation Control SSBO Blocks: " << MaxControlSSBOs << '\n'
+		<< "Max Tessellation Evaluation SSBO Blocks: " << MaxEvalSSBOs << '\n'
+		<< "Max Geometry SSBO Blocks: " << MaxGeometrySSBOs << '\n'
 		<< "Max Fragment SSBO Blocks: " << MaxFragmentSSBOs << '\n'
 		<< "Max Compute SSBO Blocks: " << MaxComputeSSBOs << '\n';
 

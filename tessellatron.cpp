@@ -10,11 +10,16 @@
 using namespace glm;
 
 
-ShaderPipeline TestShader;
+ShaderPipeline CoarsePass;
+ShaderPipeline FinePass;
+
 
 Buffer Screen("Screen");
 Buffer Camera("Camera");
-Buffer Spheres;
+Buffer Spheres("Spheres");
+Buffer HeapMeta("Meta Heap");
+Buffer HeapTriangles("Triangles Heap");
+
 
 const GLuint FinalPass = 0;
 
@@ -42,6 +47,16 @@ struct ObjectUpload
 };
 
 
+struct HeapMetaUpload
+{
+	uint MaxSize;
+	uint Count;
+	uint InstanceCount;
+	uint First;
+	uint BaseInstance;
+};
+
+
 void UpdateScreenInfo()
 {
 	float ScreenWidth;
@@ -59,13 +74,21 @@ StatusCode Tessellatron::Setup()
 {
 	UpdateScreenInfo();
 
-	RETURN_ON_FAIL(TestShader.Setup(
-		{ {GL_VERTEX_SHADER, "shaders/tessellation_test/test.vs.glsl"},
-		  {GL_TESS_CONTROL_SHADER, "shaders/tessellation_test/test.tcs.glsl"},
-		  {GL_TESS_EVALUATION_SHADER, "shaders/tessellation_test/test.tes.glsl"},
-		  {GL_GEOMETRY_SHADER, "shaders/tessellation_test/test.gs.glsl"},
-		  {GL_FRAGMENT_SHADER, "shaders/tessellation_test/test.fs.glsl"} },
-		"Tessellation Test"));
+	RETURN_ON_FAIL(CoarsePass.Setup(
+		{ {GL_VERTEX_SHADER, "shaders/tessellatron/sphere.vs.glsl"},
+		  {GL_TESS_CONTROL_SHADER, "shaders/tessellatron/coarse.tcs.glsl"},
+		  {GL_TESS_EVALUATION_SHADER, "shaders/tessellatron/coarse.tes.glsl"},
+		  {GL_GEOMETRY_SHADER, "shaders/tessellatron/coarse.gs.glsl"},
+		  {GL_FRAGMENT_SHADER, "shaders/tessellatron/coarse.fs.glsl"} },
+		"Coarse Tessellation Shader"));
+
+	RETURN_ON_FAIL(FinePass.Setup(
+		{ {GL_VERTEX_SHADER, "shaders/tessellatron/fine.vs.glsl"},
+		  {GL_TESS_CONTROL_SHADER, "shaders/tessellatron/fine.tcs.glsl"},
+		  {GL_TESS_EVALUATION_SHADER, "shaders/tessellatron/fine.tes.glsl"},
+		  {GL_GEOMETRY_SHADER, "shaders/tessellatron/fine.gs.glsl"},
+		  {GL_FRAGMENT_SHADER, "shaders/tessellatron/fine.fs.glsl"} },
+		"Fine Tessellation Shader"));
 
 	// Cheese opengl into letting us draw triangles without any data.
 	GLuint vao;
@@ -124,21 +147,51 @@ void Tessellatron::Render(const int FrameCounter)
 		BufferData.SphereParams[2] = vec4(0.0, 0.5, 0.85, -0.9);
 		Spheres.Upload((void*)&BufferData, sizeof(BufferData));
 	}
+	{
+		uint MaxVertices = 10000 * 3;
+		{
+			size_t HeapBytes = MaxVertices * sizeof(float) * 4;
+			HeapTriangles.Reserve(HeapBytes);
+		}
+		{
+			HeapMetaUpload BufferData;
+			BufferData.MaxSize = MaxVertices;
+			BufferData.Count = 0;
+			BufferData.InstanceCount = 1;
+			BufferData.First = 0;
+			BufferData.BaseInstance = 0;
+			HeapMeta.Upload((void*)&BufferData, sizeof(BufferData));
+		}
+	}
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Coarse Pass");
+		glBindFramebuffer(GL_FRAMEBUFFER, FinalPass);
 
-	glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Tessellation Test Pass");
-	glBindFramebuffer(GL_FRAMEBUFFER, FinalPass);
+		CoarsePass.Activate();
+		glClearColor(0.25, 0.25, 0.25, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	TestShader.Activate();
-	glClearColor(0.25, 0.25, 0.25, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		Screen.Bind(GL_UNIFORM_BUFFER, 1);
+		Camera.Bind(GL_UNIFORM_BUFFER, 2);
+		Spheres.Bind(GL_UNIFORM_BUFFER, 3);
 
-	Screen.Bind(GL_UNIFORM_BUFFER, 1);
-	Camera.Bind(GL_UNIFORM_BUFFER, 2);
-	Spheres.Bind(GL_UNIFORM_BUFFER, 3);
+		HeapMeta.Bind(GL_SHADER_STORAGE_BUFFER, 0);
+		HeapTriangles.Bind(GL_SHADER_STORAGE_BUFFER, 1);
 
-	glPatchParameteri(GL_PATCH_VERTICES, 3);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glDrawArraysInstanced(GL_PATCHES, 0, 20 * 3, OBJECT_COUNT);
+		glPatchParameteri(GL_PATCH_VERTICES, 3);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glDrawArraysInstanced(GL_PATCHES, 0, 20 * 3, OBJECT_COUNT);
 
-	glPopDebugGroup();
+		glPopDebugGroup();
+	}
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Coarse Pass");
+
+		FinePass.Activate();
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+		HeapMeta.Bind(GL_DRAW_INDIRECT_BUFFER);
+		glDrawArraysIndirect(GL_PATCHES, (void*)(sizeof(uint)));
+
+		glPopDebugGroup();
+	}
 }

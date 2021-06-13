@@ -194,12 +194,12 @@ const std::string GetShaderExtensions(GLenum ShaderType)
 	static const std::string VertexExtensions = \
 		"#extension GL_ARB_gpu_shader5 : require\n" \
 		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
-		"#extension GL_ARB_shading_language_420pack : require\n" \
-		"#extension GL_ARB_enhanced_layouts : require\n";
+		"#extension GL_ARB_shading_language_420pack : require\n";
 
 	static const std::string TessellationExtensions = \
 		"#extension GL_ARB_gpu_shader5 : require\n" \
-		"#extension GL_ARB_enhanced_layouts : require\n";
+		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
+		"#extension GL_ARB_shading_language_420pack : require\n";
 
 	static const std::string FragmentExtensions = \
 		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
@@ -210,8 +210,8 @@ const std::string GetShaderExtensions(GLenum ShaderType)
 
 	static const std::string ComputeExtensions = \
 		"#extension GL_ARB_compute_shader : require\n" \
-	   	"#extension GL_ARB_shader_storage_buffer_object : require\n" \
-	   	"#extension GL_ARB_shader_image_load_store : require\n" \
+		"#extension GL_ARB_shader_storage_buffer_object : require\n" \
+		"#extension GL_ARB_shader_image_load_store : require\n" \
 		"#extension GL_ARB_gpu_shader5 : require\n" \
 		"#extension GL_ARB_shading_language_420pack : require\n";
 
@@ -220,27 +220,37 @@ const std::string GetShaderExtensions(GLenum ShaderType)
 		"#extension GL_NV_mesh_shader : require\n";
 #endif
 
+	static const std::string ShaderTypeMeta = \
+		"#define GL_VERTEX_SHADER " + std::to_string(GL_VERTEX_SHADER) + "\n" + \
+		"#define GL_TESS_CONTROL_SHADER " + std::to_string(GL_TESS_CONTROL_SHADER) + "\n" + \
+		"#define GL_TESS_EVALUATION_SHADER " + std::to_string(GL_TESS_EVALUATION_SHADER) + "\n" + \
+		"#define GL_GEOMETRY_SHADER " + std::to_string(GL_GEOMETRY_SHADER) + "\n" + \
+		"#define GL_FRAGMENT_SHADER " + std::to_string(GL_FRAGMENT_SHADER) + "\n" + \
+		"#define GL_COMPUTE_SHADER " + std::to_string(GL_COMPUTE_SHADER) + "\n";
+
+	const std::string ShaderTypeDefine = ShaderTypeMeta + "#define SHADER_TYPE " + std::to_string(ShaderType) + "\n";
+
 	switch (ShaderType)
 	{
 	case GL_VERTEX_SHADER:
-		return Version + VertexExtensions;
+		return Version + VertexExtensions + ShaderTypeDefine;
 
 	case GL_FRAGMENT_SHADER:
-		return Version + FragmentExtensions;
+		return Version + FragmentExtensions + ShaderTypeDefine;
 
 	case GL_TESS_CONTROL_SHADER:
 	case GL_TESS_EVALUATION_SHADER:
 	case GL_GEOMETRY_SHADER:
-		return Version + TessellationExtensions;
+		return Version + TessellationExtensions + ShaderTypeDefine;
 
 #if GL_NV_mesh_shader
 	case GL_TASK_SHADER_NV:
 	case GL_MESH_SHADER_NV:
-		return Version + MeshExtensions;
+		return Version + MeshExtensions + ShaderTypeDefine;
 #endif
 
 	default:
-		return Version + ComputeExtensions;
+		return Version + ComputeExtensions + ShaderTypeDefine;
 	}
 }
 
@@ -361,6 +371,12 @@ inline void Buffer::Release()
 }
 
 
+void Buffer::Reserve(size_t Bytes)
+{
+	Upload(nullptr, Bytes);
+}
+
+
 void Buffer::Upload(void* Data, size_t Bytes)
 {
 	if (Bytes != LastSize)
@@ -387,4 +403,10 @@ void Buffer::Upload(void* Data, size_t Bytes)
 void Buffer::Bind(GLenum Target, GLuint BindingIndex)
 {
 	glBindBufferBase(Target, BindingIndex, BufferID);
+}
+
+
+void Buffer::Bind(GLenum Target)
+{
+	glBindBuffer(Target,  BufferID);
 }

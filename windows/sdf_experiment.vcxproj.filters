@@ -16,6 +16,18 @@
     <Filter Include="shaders\tessellation_test">
       <UniqueIdentifier>{ede94391-3194-446c-9600-d7b50b4381a1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shaders\raymarcher">
+      <UniqueIdentifier>{5be28741-f3af-4e4a-b328-7dd044645662}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders\tessellatron">
+      <UniqueIdentifier>{b2e5fbbb-2aed-4929-90e9-e4ae8c8bfa29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders\tessellatron\coarse">
+      <UniqueIdentifier>{c6ee9aac-17cd-442d-844a-0ad480c53472}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders\tessellatron\fine">
+      <UniqueIdentifier>{a8c18d22-280f-4981-8f17-07b0957a5081}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\glue\errors.cpp">
@@ -56,73 +68,7 @@
     <None Include="..\shaders\screen.glsl">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\shaders\defs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\shapes.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\raymarch.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\math.glsl">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="..\shaders\view.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\paint.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\scene.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\depth.fs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\depth.vs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\color.fs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\color.vs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\objects.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\text.fs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\text.vs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\cube.fs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\cube.vs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\gloom.fs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\gloom.vs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\light.fs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\light.vs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\mesh_shader_test.fs.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\mesh_shader_test.ms.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\range.cs.glsl">
       <Filter>shaders</Filter>
     </None>
     <None Include="..\shaders\tessellation_test\test.fs.glsl">
@@ -148,6 +94,108 @@
     </None>
     <None Include="..\shaders\tessellation_test\test.gs.glsl">
       <Filter>shaders\tessellation_test</Filter>
+    </None>
+    <None Include="..\shaders\color.fs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\color.vs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\cube.fs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\cube.vs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\defs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\depth.fs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\depth.vs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\gloom.fs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\gloom.vs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\light.fs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\light.vs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\math.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\mesh_shader_test.fs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\mesh_shader_test.ms.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\objects.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\paint.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\range.cs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\raymarch.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\scene.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\shapes.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\text.fs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\text.vs.glsl">
+      <Filter>shaders\raymarcher</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\heaps.glsl">
+      <Filter>shaders\tessellatron</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\coarse.fs.glsl">
+      <Filter>shaders\tessellatron\coarse</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\coarse.gs.glsl">
+      <Filter>shaders\tessellatron\coarse</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\coarse.tcs.glsl">
+      <Filter>shaders\tessellatron\coarse</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\coarse.tes.glsl">
+      <Filter>shaders\tessellatron\coarse</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\fine.fs.glsl">
+      <Filter>shaders\tessellatron\fine</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\fine.gs.glsl">
+      <Filter>shaders\tessellatron\fine</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\fine.tcs.glsl">
+      <Filter>shaders\tessellatron\fine</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\fine.tes.glsl">
+      <Filter>shaders\tessellatron\fine</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\fine.vs.glsl">
+      <Filter>shaders\tessellatron\fine</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\icosphere.glsl">
+      <Filter>shaders\tessellatron\coarse</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\sphere.vs.glsl">
+      <Filter>shaders\tessellatron\coarse</Filter>
     </None>
   </ItemGroup>
 </Project>
