@@ -7,7 +7,7 @@ in TES_IN
 {
 	vec3 Normal;
 	int CutShape;
-	vec3 Scratch;
+	float Weight;
 } tes_in[];
 
 
@@ -16,6 +16,7 @@ out TES_OUT
 	vec4 Position;
 	vec3 Barycenter;
 	int CutShape;
+	float Weight;
 };
 
 
@@ -35,9 +36,14 @@ void main()
 		gl_TessCoord.y * tes_in[1].Normal +
 		gl_TessCoord.z * tes_in[2].Normal);
 
+	Weight = (
+		gl_TessCoord.x * tes_in[0].Weight +
+		gl_TessCoord.y * tes_in[1].Weight +
+		gl_TessCoord.z * tes_in[2].Weight);
+
 	CutShape = tes_in[0].CutShape;
 
-	//if (!(gl_TessCoord.x == 0.0 || gl_TessCoord.y == 0.0 || gl_TessCoord.z == 0.0))
+	if (Weight < 1.0)
 	{
 		if (CutShape > -1)
 		{
@@ -48,5 +54,6 @@ void main()
 			Fine(Position.xyz, Normal);
 		}
 	}
+
 	gl_Position = ViewToClip * WorldToView * vec4(Position.xyz, 1.0);
 }

@@ -8,6 +8,7 @@ in TES_OUT
 	vec4 Position;
 	vec3 Barycenter;
 	int CutShape;
+	float Weight;
 } gs_in[];
 
 
@@ -17,6 +18,8 @@ out GS_OUT
 	vec3 Barycenter;
 	vec3 SubBarycenter;
 	int CutShape;
+	int Passing;
+	float Weight;
 } gs_out;
 
 
@@ -37,7 +40,7 @@ void main()
 	int Passing = 0;
 	for (int i = 0; i < 3; ++i)
 	{
-		if (!(SceneCutFn(gs_in[i].Position.xyz) > 0.00001))
+		if (gs_in[i].Weight == 1.0 || SceneCutFn(gs_in[i].Position.xyz) <= 0.0001)
 		{
 			++Passing;
 		}
@@ -51,6 +54,8 @@ void main()
 			gs_out.Barycenter = gs_in[i].Barycenter;
 			gs_out.SubBarycenter = SubBarycenters[i];
 			gs_out.CutShape = gs_in[i].CutShape;
+			gs_out.Passing = Passing;
+			gs_out.Weight = gs_in[i].Weight;
 			EmitVertex();
 		}
 		EndPrimitive();

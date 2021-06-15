@@ -50,7 +50,7 @@ void main()
 	int Passing = 0;
 	for (int i = 0; i < 3; ++i)
 	{
-		if (!(SceneCutFn(gs_in[i].Position.xyz) > 0.00001))
+		if (SceneCutFn(gs_in[i].Position.xyz) <= 0.0001)
 		{
 			++Passing;
 		}

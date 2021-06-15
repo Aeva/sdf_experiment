@@ -3,7 +3,7 @@ prepend: shaders/view.glsl
 --------------------------------------------------------------------------------
 
 #define VISUALIZE_PRECISION 0
-#define VISUALIZE_PRIMITIVE 1
+#define VISUALIZE_PRIMITIVE 0
 #define ALLOW_DISCARD 0
 
 layout(location = 0) out vec4 OutColor;
