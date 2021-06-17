@@ -45,5 +45,4 @@ void main()
 	{
 		Fine(Position.xyz, Normal);
 	}
-	gl_Position = ViewToClip * WorldToView * vec4(Position.xyz, 1.0);
 }

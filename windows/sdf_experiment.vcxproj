@@ -183,6 +183,8 @@
     <None Include="..\shaders\tessellatron\coarse.gs.glsl" />
     <None Include="..\shaders\tessellatron\coarse.tcs.glsl" />
     <None Include="..\shaders\tessellatron\coarse.tes.glsl" />
+    <None Include="..\shaders\tessellatron\final.fs.glsl" />
+    <None Include="..\shaders\tessellatron\final.vs.glsl" />
     <None Include="..\shaders\tessellatron\fine.fs.glsl" />
     <None Include="..\shaders\tessellatron\fine.gs.glsl" />
     <None Include="..\shaders\tessellatron\fine.tcs.glsl" />

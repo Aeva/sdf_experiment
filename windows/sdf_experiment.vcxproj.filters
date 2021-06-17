@@ -28,6 +28,9 @@
     <Filter Include="shaders\tessellatron\fine">
       <UniqueIdentifier>{a8c18d22-280f-4981-8f17-07b0957a5081}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shaders\tessellatron\final">
+      <UniqueIdentifier>{bd364930-bea3-4619-86f0-23782f4d04b0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\glue\errors.cpp">
@@ -196,6 +199,12 @@
     </None>
     <None Include="..\shaders\tessellatron\sphere.vs.glsl">
       <Filter>shaders\tessellatron\coarse</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\final.fs.glsl">
+      <Filter>shaders\tessellatron\final</Filter>
+    </None>
+    <None Include="..\shaders\tessellatron\final.vs.glsl">
+      <Filter>shaders\tessellatron\final</Filter>
     </None>
   </ItemGroup>
 </Project>

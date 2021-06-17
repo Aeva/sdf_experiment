@@ -12,13 +12,18 @@ using namespace glm;
 
 ShaderPipeline CoarsePass;
 ShaderPipeline FinePass;
+ShaderPipeline DrawPass;
 
 
 Buffer Screen("Screen");
 Buffer Camera("Camera");
 Buffer Spheres("Spheres");
-Buffer HeapMeta("Meta Heap");
-Buffer HeapTriangles("Triangles Heap");
+Buffer CoarseMeta("Coarse Meta");
+Buffer CoarseTriangles("Coarse Triangles");
+Buffer FineMeta("Coarse Meta");
+Buffer FineTriangles("Coarse Triangles");
+
+
 
 
 const GLuint FinalPass = 0;
@@ -90,6 +95,11 @@ StatusCode Tessellatron::Setup()
 		  {GL_FRAGMENT_SHADER, "shaders/tessellatron/fine.fs.glsl"} },
 		"Fine Tessellation Shader"));
 
+	RETURN_ON_FAIL(DrawPass.Setup(
+		{ {GL_VERTEX_SHADER, "shaders/tessellatron/final.vs.glsl"},
+		  {GL_FRAGMENT_SHADER, "shaders/tessellatron/final.fs.glsl"} },
+		"Tessellated Draw Shader"));
+
 	// Cheese opengl into letting us draw triangles without any data.
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
@@ -151,7 +161,7 @@ void Tessellatron::Render(const int FrameCounter)
 		uint MaxVertices = 10000 * 3;
 		{
 			size_t HeapBytes = MaxVertices * sizeof(float) * 4;
-			HeapTriangles.Reserve(HeapBytes);
+			CoarseTriangles.Reserve(HeapBytes);
 		}
 		{
 			HeapMetaUpload BufferData;
@@ -160,7 +170,23 @@ void Tessellatron::Render(const int FrameCounter)
 			BufferData.InstanceCount = 1;
 			BufferData.First = 0;
 			BufferData.BaseInstance = 0;
-			HeapMeta.Upload((void*)&BufferData, sizeof(BufferData));
+			CoarseMeta.Upload((void*)&BufferData, sizeof(BufferData));
+		}
+	}
+	{
+		uint MaxVertices = 1024 * 1024 * 3;
+		{
+			size_t HeapBytes = MaxVertices * sizeof(float) * 4;
+			FineTriangles.Reserve(HeapBytes);
+		}
+		{
+			HeapMetaUpload BufferData;
+			BufferData.MaxSize = MaxVertices;
+			BufferData.Count = 0;
+			BufferData.InstanceCount = 1;
+			BufferData.First = 0;
+			BufferData.BaseInstance = 0;
+			FineMeta.Upload((void*)&BufferData, sizeof(BufferData));
 		}
 	}
 	{
@@ -175,9 +201,10 @@ void Tessellatron::Render(const int FrameCounter)
 		Camera.Bind(GL_UNIFORM_BUFFER, 2);
 		Spheres.Bind(GL_UNIFORM_BUFFER, 3);
 
-		HeapMeta.Bind(GL_SHADER_STORAGE_BUFFER, 0);
-		HeapTriangles.Bind(GL_SHADER_STORAGE_BUFFER, 1);
+		CoarseMeta.Bind(GL_SHADER_STORAGE_BUFFER, 0);
+		CoarseTriangles.Bind(GL_SHADER_STORAGE_BUFFER, 1);
 
+		glEnable(GL_RASTERIZER_DISCARD);
 		glPatchParameteri(GL_PATCH_VERTICES, 3);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArraysInstanced(GL_PATCHES, 0, 20 * 3, OBJECT_COUNT);
@@ -185,12 +212,27 @@ void Tessellatron::Render(const int FrameCounter)
 		glPopDebugGroup();
 	}
 	{
-		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Coarse Pass");
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Fine Pass");
 
 		FinePass.Activate();
-		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-		HeapMeta.Bind(GL_DRAW_INDIRECT_BUFFER);
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+		CoarseMeta.Bind(GL_DRAW_INDIRECT_BUFFER);
+		CoarseTriangles.Bind(GL_SHADER_STORAGE_BUFFER, 2);
+		FineMeta.Bind(GL_SHADER_STORAGE_BUFFER, 0);
+		FineTriangles.Bind(GL_SHADER_STORAGE_BUFFER, 1);
 		glDrawArraysIndirect(GL_PATCHES, (void*)(sizeof(uint)));
+
+		glPopDebugGroup();
+	}
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Actually Draw Pass");
+
+		DrawPass.Activate();
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+		glDisable(GL_RASTERIZER_DISCARD);
+		FineMeta.Bind(GL_DRAW_INDIRECT_BUFFER);
+		FineTriangles.Bind(GL_SHADER_STORAGE_BUFFER, 2);
+		glDrawArraysIndirect(GL_TRIANGLES, (void*)(sizeof(uint)));
 
 		glPopDebugGroup();
 	}

@@ -7,16 +7,14 @@ in TES_IN
 {
 	vec3 Normal;
 	int CutShape;
-	float Weight;
+	vec3 Scratch;
 } tes_in[];
 
 
 out TES_OUT
 {
 	vec4 Position;
-	vec3 Barycenter;
 	int CutShape;
-	float Weight;
 };
 
 
@@ -25,7 +23,6 @@ layout (triangles, equal_spacing, ccw) in;
 
 void main()
 {
-	Barycenter = gl_TessCoord;
 	Position = (
 		gl_TessCoord.x * gl_in[0].gl_Position +
 		gl_TessCoord.y * gl_in[1].gl_Position +
@@ -36,14 +33,8 @@ void main()
 		gl_TessCoord.y * tes_in[1].Normal +
 		gl_TessCoord.z * tes_in[2].Normal);
 
-	Weight = (
-		gl_TessCoord.x * tes_in[0].Weight +
-		gl_TessCoord.y * tes_in[1].Weight +
-		gl_TessCoord.z * tes_in[2].Weight);
-
 	CutShape = tes_in[0].CutShape;
 
-	if (Weight < 1.0)
 	{
 		if (CutShape > -1)
 		{
@@ -54,6 +45,4 @@ void main()
 			Fine(Position.xyz, Normal);
 		}
 	}
-
-	gl_Position = ViewToClip * WorldToView * vec4(Position.xyz, 1.0);
 }

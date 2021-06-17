@@ -3,61 +3,49 @@ prepend: shaders/tessellation_test/sdf.glsl
 --------------------------------------------------------------------------------
 
 
+layout(std430, binding = 0) restrict buffer TriangleMeta
+{
+	uint StreamStop;
+	uint StreamNext;
+};
+
+
+layout(std430, binding = 1) writeonly buffer TriangleStream
+{
+	vec4 StreamOut[];
+};
+
+
 in TES_OUT
 {
 	vec4 Position;
-	vec3 Barycenter;
 	int CutShape;
-	float Weight;
 } gs_in[];
-
-
-out GS_OUT
-{
-	vec3 Position;
-	vec3 Barycenter;
-	vec3 SubBarycenter;
-	int CutShape;
-	int Passing;
-	float Weight;
-} gs_out;
 
 
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
 
-const vec3 SubBarycenters[3] = \
-{
-	vec3(1.0, 0.0, 0.0),
-	vec3(0.0, 1.0, 0.0),
-	vec3(0.0, 0.0, 1.0)
-};
-
-
 void main()
 {
-	int Passing = 0;
-	for (int i = 0; i < 3; ++i)
+	bool Passing = \
+		SceneCutFn(gs_in[0].Position.xyz) <= 0.001 || \
+		SceneCutFn(gs_in[1].Position.xyz) <= 0.001 || \
+		SceneCutFn(gs_in[2].Position.xyz) <= 0.001;
+	if (Passing)
 	{
-		if (gs_in[i].Weight == 1.0 || SceneCutFn(gs_in[i].Position.xyz) <= 0.0001)
+		uint Base = atomicAdd(StreamNext, 3);
+		if (Base < StreamStop)
 		{
-			++Passing;
+			for (int i = 0; i < 3; ++i)
+			{
+				StreamOut[Base + i] = vec4(gs_in[i].Position.xyz, intBitsToFloat(gs_in[i].CutShape));
+			}
 		}
-	}
-	if (Passing > 0)
-	{
-		for (int i = 0; i < 3; ++i)
+		else
 		{
-			gl_Position = gl_in[i].gl_Position;
-			gs_out.Position = gs_in[i].Position.xyz;
-			gs_out.Barycenter = gs_in[i].Barycenter;
-			gs_out.SubBarycenter = SubBarycenters[i];
-			gs_out.CutShape = gs_in[i].CutShape;
-			gs_out.Passing = Passing;
-			gs_out.Weight = gs_in[i].Weight;
-			EmitVertex();
+			atomicAdd(StreamNext, -3);
 		}
-		EndPrimitive();
 	}
 }

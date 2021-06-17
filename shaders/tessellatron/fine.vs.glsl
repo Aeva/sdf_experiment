@@ -3,7 +3,7 @@ prepend: shaders/tessellation_test/sdf.glsl
 --------------------------------------------------------------------------------
 
 
-layout(std430, binding = 1) Readonly buffer TriangleStream
+layout(std430, binding = 2) Readonly buffer TriangleStream
 {
 	vec4 StreamIn[];
 };
