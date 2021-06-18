@@ -3,9 +3,9 @@ prepend: shaders/view.glsl
 --------------------------------------------------------------------------------
 
 #define VISUALIZE_PRECISION 0
-#define VISUALIZE_PRIMITIVE 0
-#define ALLOW_SLIDE 1
-#define ALLOW_DISCARD 1
+#define VISUALIZE_PRIMITIVE 1
+#define ALLOW_SLIDE 0
+#define ALLOW_DISCARD 0
 
 layout(location = 0) out vec4 OutColor;
 in vec4 gl_FragCoord;
@@ -14,6 +14,7 @@ in vec4 gl_FragCoord;
 in VS_OUT
 {
 	vec3 InPosition;
+	vec3 Barycenter;
 };
 
 
@@ -94,10 +95,6 @@ void main ()
 	if (Barycenter.x < 0.05 || Barycenter.y < 0.05 || Barycenter.z < 0.05)
 	{
 		OutColor = vec4(0.0, 0.0, 1.0, 1.0);
-	}
-	else if (SubBarycenter.x < 0.075 || SubBarycenter.y < 0.075 || SubBarycenter.z < 0.075)
-	{
-		OutColor = vec4(1.0, 0.0, 0.0, 1.0);
 	}
 	else
 	{

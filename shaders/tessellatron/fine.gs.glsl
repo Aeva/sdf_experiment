@@ -30,9 +30,9 @@ layout(triangle_strip, max_vertices = 3) out;
 void main()
 {
 	bool Passing = \
-		SceneCutFn(gs_in[0].Position.xyz) <= 0.001 || \
-		SceneCutFn(gs_in[1].Position.xyz) <= 0.001 || \
-		SceneCutFn(gs_in[2].Position.xyz) <= 0.001;
+		SceneCutFn(gs_in[0].Position.xyz) <= 0.01 && \
+		SceneCutFn(gs_in[1].Position.xyz) <= 0.01 && \
+		SceneCutFn(gs_in[2].Position.xyz) <= 0.01;
 	if (Passing)
 	{
 		uint Base = atomicAdd(StreamNext, 3);

@@ -35,6 +35,13 @@ void main()
 
 	CutShape = tes_in[0].CutShape;
 
+	vec3 Gradient = normalize(EdgeGradient(Position.xyz));
+	float Dist = EdgeMagnet(Position.xyz);
+	if (Dist < 0.1)
+	{
+		Position.xyz -= Gradient * Dist;
+	}
+
 	{
 		if (CutShape > -1)
 		{

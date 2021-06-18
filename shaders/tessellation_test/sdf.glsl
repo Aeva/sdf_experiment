@@ -49,6 +49,17 @@ float SceneCutFn(vec3 Point)
 }
 
 
+float EdgeMagnet(vec3 Point)
+{
+	float A = SmoothUnion(
+		Sphere(Point, 0),
+		Sphere(Point, 1),
+		0.6);
+	float B = Sphere(Point, 2);
+	return length(vec2(A, B));
+}
+
+
 vec3 Gradient(vec3 Point)
 {
 	vec3 Fnord = vec3(EPSILON, 0.0, 0.0);
@@ -62,6 +73,24 @@ vec3 Gradient(vec3 Point)
 		SceneFn(Point - Fnord.xyz),
 		SceneFn(Point - Fnord.zxy),
 		SceneFn(Point - Fnord.yzx));
+
+	return (High - Low) / (2.0 * EPSILON);
+}
+
+
+vec3 EdgeGradient(vec3 Point)
+{
+	vec3 Fnord = vec3(EPSILON, 0.0, 0.0);
+
+	vec3 High = vec3(
+		EdgeMagnet(Point + Fnord.xyz),
+		EdgeMagnet(Point + Fnord.zxy),
+		EdgeMagnet(Point + Fnord.yzx));
+
+	vec3 Low = vec3(
+		EdgeMagnet(Point - Fnord.xyz),
+		EdgeMagnet(Point - Fnord.zxy),
+		EdgeMagnet(Point - Fnord.yzx));
 
 	return (High - Low) / (2.0 * EPSILON);
 }
