@@ -29,11 +29,16 @@ layout(triangle_strip, max_vertices = 3) out;
 
 void main()
 {
-	bool Passing = \
-		SceneCutFn(gs_in[0].Position.xyz) <= 0.01 && \
-		SceneCutFn(gs_in[1].Position.xyz) <= 0.01 && \
-		SceneCutFn(gs_in[2].Position.xyz) <= 0.01;
-	if (Passing)
+	vec3 Center = (\
+		gs_in[0].Position.xyz + \
+		gs_in[1].Position.xyz + \
+		gs_in[2].Position.xyz) / 3.0;
+
+	float Positive = SceneFn(Center);
+	float Negative = -Sphere(Center, 2);
+	float Other = gs_in[0].CutShape > -1 ? Positive : Negative;
+
+	if (Other < 0.0)
 	{
 		uint Base = atomicAdd(StreamNext, 3);
 		if (Base < StreamStop)

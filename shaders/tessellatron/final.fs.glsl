@@ -94,17 +94,19 @@ void main ()
 #elif VISUALIZE_PRIMITIVE
 	if (Barycenter.x < 0.05 || Barycenter.y < 0.05 || Barycenter.z < 0.05)
 	{
-		OutColor = vec4(0.0, 0.0, 1.0, 1.0);
+		OutColor = vec4(0.0, 0.0, 0.0, 1.0);
 	}
 	else
 	{
-		OutColor = vec4(0.85, 0.85, 0.85, 1.0);
+		//OutColor = vec4(0.85, 0.85, 0.85, 1.0);
+		vec3 Normal = normalize(GradientFinal(Position));
+		OutColor = vec4((Normal + 1.0) * 0.5, 1.0);
 	}
 #else
 	{
 		vec3 Normal = normalize(GradientFinal(Position));
 		OutColor = vec4((Normal + 1.0) * 0.5, 1.0);
-		gl_FragDepth = 1.0 / distance(Position, CameraOrigin.xyz);
 	}
 #endif
+	gl_FragDepth = 1.0 / distance(Position, CameraOrigin.xyz);
 }
