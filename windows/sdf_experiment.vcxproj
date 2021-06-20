@@ -171,14 +171,6 @@
     <None Include="..\shaders\scene.glsl" />
     <None Include="..\shaders\screen.glsl" />
     <None Include="..\shaders\shapes.glsl" />
-    <None Include="..\shaders\tessellation_test\icosphere.glsl" />
-    <None Include="..\shaders\tessellation_test\objects.glsl" />
-    <None Include="..\shaders\tessellation_test\sdf.glsl" />
-    <None Include="..\shaders\tessellation_test\test.fs.glsl" />
-    <None Include="..\shaders\tessellation_test\test.gs.glsl" />
-    <None Include="..\shaders\tessellation_test\test.tcs.glsl" />
-    <None Include="..\shaders\tessellation_test\test.tes.glsl" />
-    <None Include="..\shaders\tessellation_test\test.vs.glsl" />
     <None Include="..\shaders\tessellatron\coarse.fs.glsl" />
     <None Include="..\shaders\tessellatron\coarse.gs.glsl" />
     <None Include="..\shaders\tessellatron\coarse.tcs.glsl" />
@@ -192,6 +184,8 @@
     <None Include="..\shaders\tessellatron\fine.vs.glsl" />
     <None Include="..\shaders\tessellatron\heaps.glsl" />
     <None Include="..\shaders\tessellatron\icosphere.glsl" />
+    <None Include="..\shaders\tessellatron\objects.glsl" />
+    <None Include="..\shaders\tessellatron\sdf.glsl" />
     <None Include="..\shaders\tessellatron\sphere.vs.glsl" />
     <None Include="..\shaders\text.fs.glsl" />
     <None Include="..\shaders\text.vs.glsl" />

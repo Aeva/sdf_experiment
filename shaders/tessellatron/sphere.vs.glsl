@@ -1,6 +1,6 @@
 prepend: shaders/standard_boilerplate.glsl
 prepend: shaders/tessellatron/icosphere.glsl
-prepend: shaders/tessellation_test/sdf.glsl
+prepend: shaders/tessellatron/sdf.glsl
 --------------------------------------------------------------------------------
 
 out VS_OUT

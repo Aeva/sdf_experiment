@@ -1,4 +1,4 @@
-prepend: shaders/tessellation_test/objects.glsl
+prepend: shaders/tessellatron/objects.glsl
 --------------------------------------------------------------------------------
 
 #define EPSILON 0.0001

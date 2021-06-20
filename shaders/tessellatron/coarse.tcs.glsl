@@ -1,7 +1,7 @@
 prepend: shaders/standard_boilerplate.glsl
 prepend: shaders/screen.glsl
 prepend: shaders/view.glsl
-prepend: shaders/tessellation_test/sdf.glsl
+prepend: shaders/tessellatron/sdf.glsl
 --------------------------------------------------------------------------------
 
 in TCS_IN

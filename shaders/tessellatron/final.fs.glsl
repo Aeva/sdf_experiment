@@ -1,4 +1,4 @@
-prepend: shaders/tessellation_test/sdf.glsl
+prepend: shaders/tessellatron/sdf.glsl
 prepend: shaders/view.glsl
 --------------------------------------------------------------------------------
 
