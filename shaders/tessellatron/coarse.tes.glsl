@@ -6,7 +6,7 @@ prepend: shaders/view.glsl
 in TES_IN
 {
 	vec3 Normal;
-	int CutShape;
+	int ShapeID;
 	vec3 Scratch;
 } tes_in[];
 
@@ -15,7 +15,7 @@ out TES_OUT
 {
 	vec4 Position;
 	vec3 Barycenter;
-	int CutShape;
+	int ShapeID;
 };
 
 
@@ -35,11 +35,11 @@ void main()
 		gl_TessCoord.y * tes_in[1].Normal +
 		gl_TessCoord.z * tes_in[2].Normal);
 
-	CutShape = tes_in[0].CutShape;
+	ShapeID = tes_in[0].ShapeID;
 
-	if (CutShape > -1)
+	if (IsCutShape(ShapeID))
 	{
-		FineCut(Position.xyz, Normal, CutShape);
+		FineCut(Position.xyz, Normal, ShapeID);
 	}
 	else
 	{

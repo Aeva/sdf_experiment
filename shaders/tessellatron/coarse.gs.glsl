@@ -20,7 +20,7 @@ in TES_OUT
 {
 	vec4 Position;
 	vec3 Barycenter;
-	int CutShape;
+	int ShapeID;
 } gs_in[];
 
 
@@ -36,7 +36,7 @@ void main()
 		{
 			for (int i = 0; i < 3; ++i)
 			{
-				StreamOut[Base + i] = vec4(gs_in[i].Position.xyz, intBitsToFloat(gs_in[i].CutShape));
+				StreamOut[Base + i] = vec4(gs_in[i].Position.xyz, intBitsToFloat(gs_in[i].ShapeID));
 			}
 		}
 		else

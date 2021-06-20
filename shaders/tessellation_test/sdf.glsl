@@ -8,6 +8,12 @@ prepend: shaders/tessellation_test/objects.glsl
 #define FINE_ITERATIONS 4
 
 
+bool IsCutShape(int ShapeID)
+{
+	return ShapeID == 2;
+}
+
+
 float Sphere(vec3 Point, int SphereID)
 {
 	vec3 Translate = SphereParams[SphereID].xyz;

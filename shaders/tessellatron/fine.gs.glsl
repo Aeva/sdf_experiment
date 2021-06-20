@@ -19,7 +19,7 @@ layout(std430, binding = 1) writeonly buffer TriangleStream
 in TES_OUT
 {
 	vec4 Position;
-	int CutShape;
+	int ShapeID;
 } gs_in[];
 
 
@@ -33,10 +33,11 @@ void main()
 		gs_in[0].Position.xyz + \
 		gs_in[1].Position.xyz + \
 		gs_in[2].Position.xyz) / 3.0;
+	int ShapeID = gs_in[0].ShapeID;
 
 	float Positive = SceneFn(Center);
 	float Negative = -Sphere(Center, 2);
-	float Other = gs_in[0].CutShape > -1 ? Positive : Negative;
+	float Other = IsCutShape(ShapeID) ? Positive : Negative;
 
 	if (Other < 0.0)
 	{
@@ -45,7 +46,7 @@ void main()
 		{
 			for (int i = 0; i < 3; ++i)
 			{
-				StreamOut[Base + i] = vec4(gs_in[i].Position.xyz, intBitsToFloat(gs_in[i].CutShape));
+				StreamOut[Base + i] = vec4(gs_in[i].Position.xyz, intBitsToFloat(ShapeID));
 			}
 		}
 		else
