@@ -29,12 +29,6 @@ void main()
 		Vertex *= 1.5;
 	}
 	gl_Position = vec4(Vertex * abs(Sphere.w) + Sphere.xyz, 1.0);
-	if (CutShape)
-	{
-		CoarseCut(gl_Position.xyz, Normal, ShapeID);
-	}
-	else
-	{
-		Coarse(gl_Position.xyz, Normal);
-	}
+
+	Coarse(gl_Position.xyz, Normal, ShapeID);
 }

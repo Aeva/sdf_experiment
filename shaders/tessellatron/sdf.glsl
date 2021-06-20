@@ -138,23 +138,24 @@ vec3 GradientFinal(vec3 Point)
 }
 
 
-void Coarse(inout vec3 Position, inout vec3 Normal)
+void Coarse(inout vec3 Position, inout vec3 Normal, int ShapeID)
 {
-	for (int i=0; i<COARSE_ITERATIONS; ++i)
+	if (IsCutShape(ShapeID))
 	{
-		Normal = normalize(mix(Normal, Gradient(Position), 0.5));
-		Position -= Normal * SceneFn(Position);
+		for (int i=0; i<COARSE_ITERATIONS; ++i)
+		{
+			Position -= Normal * Sphere(Position, ShapeID);
+		}
+		Normal = GradientCut(Position, ShapeID);
 	}
-}
-
-
-void CoarseCut(inout vec3 Position, inout vec3 Normal, int SphereID)
-{
-	for (int i=0; i<COARSE_ITERATIONS; ++i)
+	else
 	{
-		Position -= Normal * Sphere(Position, SphereID);
+		for (int i=0; i<COARSE_ITERATIONS; ++i)
+		{
+			Normal = normalize(mix(Normal, Gradient(Position), 0.5));
+			Position -= Normal * SceneFn(Position);
+		}
 	}
-	Normal = GradientCut(Position, SphereID);
 }
 
 
