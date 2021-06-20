@@ -45,14 +45,5 @@ void main()
 		}
 	}
 
-	{
-		if (IsCutShape(ShapeID))
-		{
-			FineCut(Position.xyz, Normal, ShapeID);
-		}
-		else
-		{
-			Fine(Position.xyz, Normal);
-		}
-	}
+	Fine(Position.xyz, Normal, ShapeID);
 }

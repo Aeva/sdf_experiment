@@ -158,27 +158,26 @@ void CoarseCut(inout vec3 Position, inout vec3 Normal, int SphereID)
 }
 
 
-void Fine(inout vec3 Position, inout vec3 Normal)
+void Fine(inout vec3 Position, inout vec3 Normal, int ShapeID)
 {
 	vec3 Grade = Normal;
-	for (int i=0; i<FINE_ITERATIONS; ++i)
+	if (IsCutShape(ShapeID))
 	{
-		Grade = Gradient(Position);
-		Normal = normalize(mix(Normal, Grade, 0.5));
-		Position -= Normal * SceneFn(Position);
+		for (int i=0; i<FINE_ITERATIONS; ++i)
+		{
+			Grade = GradientCut(Position, ShapeID);
+			Normal = normalize(mix(Normal, Grade, 0.5));
+			Position -= Normal * Sphere(Position, ShapeID);
+		}
 	}
-	Normal = Grade;
-}
-
-
-void FineCut(inout vec3 Position, inout vec3 Normal, int SphereID)
-{
-	vec3 Grade = Normal;
-	for (int i=0; i<FINE_ITERATIONS; ++i)
+	else
 	{
-		Grade = GradientCut(Position, SphereID);
-		Normal = normalize(mix(Normal, Grade, 0.5));
-		Position -= Normal * Sphere(Position, SphereID);
+		for (int i=0; i<FINE_ITERATIONS; ++i)
+		{
+			Grade = Gradient(Position);
+			Normal = normalize(mix(Normal, Grade, 0.5));
+			Position -= Normal * SceneFn(Position);
+		}
 	}
 	Normal = Grade;
 }
