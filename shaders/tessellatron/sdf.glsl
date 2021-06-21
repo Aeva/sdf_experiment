@@ -35,12 +35,26 @@ float Cut(float d1, float d2)
 }
 
 
-float SceneFn(vec3 Point)
+float SceneWholeFn(vec3 Point)
 {
 	return SmoothUnion(
 		Sphere(Point, 0),
 		Sphere(Point, 1),
 		0.6);
+}
+
+
+float SceneFn(vec3 Point, int ShapeID)
+{
+	int Local = ShapeID == 0 ? 0 : 1;
+	int Other = ShapeID == 0 ? 1 : 0;
+	float A = Sphere(Point, Local);
+	float B = Sphere(Point, Other);
+	float K = 0.6;
+
+	float Ideal = SmoothUnion(A, B, K);
+	float Force = 0.5 + 0.5 * (B - A) / K;
+	return Cut(Ideal, Force);
 }
 
 
@@ -66,19 +80,19 @@ float EdgeMagnet(vec3 Point)
 }
 
 
-vec3 Gradient(vec3 Point)
+vec3 Gradient(vec3 Point, int ShapeID)
 {
 	vec3 Fnord = vec3(EPSILON, 0.0, 0.0);
 
 	vec3 High = vec3(
-		SceneFn(Point + Fnord.xyz),
-		SceneFn(Point + Fnord.zxy),
-		SceneFn(Point + Fnord.yzx));
+		SceneFn(Point + Fnord.xyz, ShapeID),
+		SceneFn(Point + Fnord.zxy, ShapeID),
+		SceneFn(Point + Fnord.yzx, ShapeID));
 
 	vec3 Low = vec3(
-		SceneFn(Point - Fnord.xyz),
-		SceneFn(Point - Fnord.zxy),
-		SceneFn(Point - Fnord.yzx));
+		SceneFn(Point - Fnord.xyz, ShapeID),
+		SceneFn(Point - Fnord.zxy, ShapeID),
+		SceneFn(Point - Fnord.yzx, ShapeID));
 
 	return (High - Low) / (2.0 * EPSILON);
 }
@@ -152,8 +166,8 @@ void Coarse(inout vec3 Position, inout vec3 Normal, int ShapeID)
 	{
 		for (int i=0; i<COARSE_ITERATIONS; ++i)
 		{
-			Normal = normalize(mix(Normal, Gradient(Position), 0.5));
-			Position -= Normal * SceneFn(Position);
+			Normal = normalize(mix(Normal, Gradient(Position, ShapeID), 0.5));
+			Position -= Normal * SceneFn(Position, ShapeID);
 		}
 	}
 }
@@ -175,9 +189,9 @@ void Fine(inout vec3 Position, inout vec3 Normal, int ShapeID)
 	{
 		for (int i=0; i<FINE_ITERATIONS; ++i)
 		{
-			Grade = Gradient(Position);
+			Grade = Gradient(Position, ShapeID);
 			Normal = normalize(mix(Normal, Grade, 0.5));
-			Position -= Normal * SceneFn(Position);
+			Position -= Normal * SceneFn(Position, ShapeID);
 		}
 	}
 	Normal = Grade;

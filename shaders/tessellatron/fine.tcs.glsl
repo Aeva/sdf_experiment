@@ -30,11 +30,11 @@ void main()
 	bool CutShape = IsCutShape(tcs_in[0].ShapeID);
 	if (CutShape)
 	{
-		tcs_out[gl_InvocationID].Scratch.x = SceneFn(gl_in[gl_InvocationID].gl_Position.xyz);
+		tcs_out[gl_InvocationID].Scratch.x = SceneFn(gl_in[gl_InvocationID].gl_Position.xyz, tcs_in[0].ShapeID);
 	}
 	else
 	{
-		tcs_out[gl_InvocationID].Scratch.x = Sphere(gl_in[gl_InvocationID].gl_Position.xyz, 2);
+		tcs_out[gl_InvocationID].Scratch.x = Sphere(gl_in[gl_InvocationID].gl_Position.xyz, tcs_in[0].ShapeID);
 	}
 	vec3 EyeRay = normalize(CameraOrigin.xyz - gl_in[gl_InvocationID].gl_Position.xyz);
 	tcs_out[gl_InvocationID].Scratch.y = dot(EyeRay, tcs_in[gl_InvocationID].Normal);

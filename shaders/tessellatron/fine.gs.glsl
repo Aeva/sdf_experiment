@@ -35,10 +35,7 @@ void main()
 		gs_in[2].Position.xyz) / 3.0;
 	int ShapeID = gs_in[0].ShapeID;
 
-	float Positive = SceneFn(Center);
-	float Negative = -Sphere(Center, 2);
-	float Other = IsCutShape(ShapeID) ? Positive : Negative;
-
+	float Other = IsCutShape(ShapeID) ? SceneWholeFn(Center) : -Sphere(Center, 2);
 	if (Other < 0.0)
 	{
 		uint Base = atomicAdd(StreamNext, 3);
