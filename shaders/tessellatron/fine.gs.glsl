@@ -35,8 +35,21 @@ void main()
 		gs_in[2].Position.xyz) / 3.0;
 	int ShapeID = gs_in[0].ShapeID;
 
+	bool Keep = true;
+	if (!IsCutShape(ShapeID))
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			if (SmoothCull(gs_in[i].Position.xyz, ShapeID))
+			{
+				Keep = false;
+				break;
+			}
+		}
+	}
+
 	float Other = IsCutShape(ShapeID) ? SceneWholeFn(Center) : -Sphere(Center, 2);
-	if (Other < 0.0)
+	if (Other < 0.0 && Keep)
 	{
 		uint Base = atomicAdd(StreamNext, 3);
 		if (Base < StreamStop)

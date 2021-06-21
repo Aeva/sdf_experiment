@@ -58,6 +58,18 @@ float SceneFn(vec3 Point, int ShapeID)
 }
 
 
+bool SmoothCull(vec3 Point, int ShapeID)
+{
+	int Local = ShapeID == 0 ? 0 : 1;
+	int Other = ShapeID == 0 ? 1 : 0;
+	float A = Sphere(Point, Local);
+	float B = Sphere(Point, Other);
+	float K = 0.6;
+
+	return A - K * 0.5 > B;
+}
+
+
 float SceneCutFn(vec3 Point)
 {
 	return Cut(
