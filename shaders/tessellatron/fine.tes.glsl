@@ -35,15 +35,5 @@ void main()
 
 	ShapeID = tes_in[0].ShapeID;
 
-	for (int i = 0; i < 5; ++i)
-	{
-		vec3 Gradient = normalize(EdgeGradient(Position.xyz));
-		float Dist = EdgeMagnet(Position.xyz);
-		if (Dist < 0.1)
-		{
-			Position.xyz -= Gradient * Dist;
-		}
-	}
-
 	Fine(Position.xyz, Normal, ShapeID);
 }

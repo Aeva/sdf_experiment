@@ -27,12 +27,33 @@ layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
 
+vec3 Slide(vec3 Start, vec3 Stop)
+{
+	vec3 Ray = normalize(Stop - Start);
+	float Travel = 0.0;
+	float MaxDist = distance(Start, Stop);
+	float LastDist = MaxDist;
+	vec3 Position;
+	for (int i = 0; i < 10; ++i)
+	{
+		Position = Ray * Travel + Start;
+		float Dist = EdgeMagnet(Position);
+		if (Dist <= LastDist)
+		{
+			Travel += Dist;
+			LastDist = Dist;
+		}
+		else
+		{
+			break;
+		}
+	}
+	return Position;
+}
+
+
 void main()
 {
-	vec3 Center = (\
-		gs_in[0].Position.xyz + \
-		gs_in[1].Position.xyz + \
-		gs_in[2].Position.xyz) / 3.0;
 	int ShapeID = gs_in[0].ShapeID;
 
 	bool Keep = true;
@@ -47,21 +68,89 @@ void main()
 			}
 		}
 	}
-
-	float Other = IsCutShape(ShapeID) ? SceneWholeFn(Center) : -Sphere(Center, 2);
-	if (Other < 0.0 && Keep)
+	if (Keep)
 	{
-		uint Base = atomicAdd(StreamNext, 3);
-		if (Base < StreamStop)
+		int OverlapCount = 0;
+		int OverlapMask = 0;
+		int Passing = 0;
+		for (int i = 0; i < 3; ++i)
 		{
-			for (int i = 0; i < 3; ++i)
+			vec3 Position = gs_in[i].Position.xyz;
+			bool Passed = IsCutShape(ShapeID) ? (SceneWholeFn(Position) < 0.0) : (Sphere(Position, 2) > 0.0);
+			if (Passed)
 			{
-				StreamOut[Base + i] = vec4(gs_in[i].Position.xyz, intBitsToFloat(ShapeID));
+				++Passing;
+			}
+			else
+			{
+				OverlapMask |= 1 << i;
+				++OverlapCount;
 			}
 		}
-		else
+		if (Passing == 3)
 		{
-			atomicAdd(StreamNext, -3);
+			uint Base = atomicAdd(StreamNext, 3);
+			if (Base < StreamStop)
+			{
+				for (int i = 0; i < 3; ++i)
+				{
+					StreamOut[Base + i] = vec4(gs_in[i].Position.xyz, intBitsToFloat(ShapeID));
+				}
+			}
+			else
+			{
+				atomicAdd(StreamNext, -3);
+			}
+		}
+		else if (OverlapCount == 1)
+		{
+			uint Base = atomicAdd(StreamNext, 6);
+			if (Base < StreamStop)
+			{
+				// Slide the outside edge towards the interior point, and then tessellate.
+				int A = findLSB(OverlapMask);
+				int B = (A + 1) % 3;
+				int C = (A + 2) % 3;
+
+				vec3 Anchor =  gs_in[A].Position.xyz;
+				vec3 First = gs_in[B].Position.xyz;
+				vec3 Second = gs_in[C].Position.xyz;
+
+				vec3 Fnord = Slide(Anchor, First);
+				StreamOut[Base + A] = vec4(Fnord, intBitsToFloat(ShapeID));
+				StreamOut[Base + B] = vec4(First, intBitsToFloat(ShapeID));
+				StreamOut[Base + C] = vec4(Second, intBitsToFloat(ShapeID));
+
+				StreamOut[Base + A + 3] = vec4(Fnord, intBitsToFloat(ShapeID));
+				StreamOut[Base + B + 3] = vec4(Second, intBitsToFloat(ShapeID));
+				StreamOut[Base + C + 3] = vec4(Slide(Anchor, Second), intBitsToFloat(ShapeID));
+			}
+			else
+			{
+				atomicAdd(StreamNext, -6);
+			}
+		}
+		else if (OverlapCount == 2)
+		{
+			uint Base = atomicAdd(StreamNext, 3);
+			if (Base < StreamStop)
+			{
+				// Slide the interior edge towards the outside point.
+				int A = findLSB(OverlapMask);
+				int B = findMSB(OverlapMask);
+				int C = 3 - A - B;
+				vec3 First = gs_in[A].Position.xyz;
+				vec3 Second = gs_in[B].Position.xyz;
+				vec3 Anchor =  gs_in[C].Position.xyz;
+
+				StreamOut[Base + A] = vec4(Slide(First, Anchor), intBitsToFloat(ShapeID));
+				StreamOut[Base + B] = vec4(Slide(Second, Anchor), intBitsToFloat(ShapeID));
+				StreamOut[Base + C] = vec4(Anchor, intBitsToFloat(ShapeID));
+			}
+			else
+			{
+				atomicAdd(StreamNext, -3);
+			}
 		}
 	}
 }
