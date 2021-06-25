@@ -3,9 +3,8 @@ prepend: shaders/view.glsl
 --------------------------------------------------------------------------------
 
 #define VISUALIZE_PRECISION 0
-#define VISUALIZE_PRIMITIVE 1
-#define ALLOW_SLIDE 0
-#define ALLOW_DISCARD 0
+#define VISUALIZE_PRIMITIVE 0
+#define ALLOW_SLIDE 1
 
 layout(location = 0) out vec4 OutColor;
 in vec4 gl_FragCoord;
@@ -58,49 +57,25 @@ vec3 VisualizePrecision(vec3 Position)
 void main ()
 {
 	vec3 Position = InPosition;
-#if ALLOW_SLIDE || ALLOW_DISCARD
-	//if (Passing < 3 && Weight < 1.0)
-#endif
+#if ALLOW_SLIDE
 	{
-		float Dist = SceneCutFn(Position);
-#if ALLOW_SLIDE
-		if (Dist > 0.0001)
+		// Camera to surface vector.
+		vec3 Ray = normalize(Position - CameraOrigin.xyz);
+		for (int i = 0; i < 4; ++i)
 		{
-			// Camera to surface vector.
-			vec3 Ray = normalize(Position - CameraOrigin.xyz);
-			for (int i = 0; i < 10; ++i)
-			{
-				vec3 Travel = Ray * 0.005 * i;
-				Dist = SceneCutFn(Position + Travel);
-				if (Dist <= 0.0001)
-				{
-					Position += Travel;
-					break;
-				}
-			}
-#endif
-#if ALLOW_DISCARD
-			if (Dist > 0.0001)
-			{
-				discard;
-			}
-#endif
-#if ALLOW_SLIDE
+			float Dist = SceneCutFn(Position);
+			Position += Ray * Dist;
 		}
-#endif
 	}
+#endif
 #if VISUALIZE_PRECISION
 	OutColor = vec4(VisualizePrecision(Position), 1.0);
 #elif VISUALIZE_PRIMITIVE
+	vec3 Normal = normalize(GradientFinal(Position));
+	OutColor = vec4((Normal + 1.0) * 0.5, 1.0);
 	if (Barycenter.x < 0.05 || Barycenter.y < 0.05 || Barycenter.z < 0.05)
 	{
-		OutColor = vec4(0.0, 0.0, 0.0, 1.0);
-	}
-	else
-	{
-		//OutColor = vec4(0.85, 0.85, 0.85, 1.0);
-		vec3 Normal = normalize(GradientFinal(Position));
-		OutColor = vec4((Normal + 1.0) * 0.5, 1.0);
+		OutColor.xyz *= 0.75;
 	}
 #else
 	{
@@ -108,5 +83,4 @@ void main ()
 		OutColor = vec4((Normal + 1.0) * 0.5, 1.0);
 	}
 #endif
-	gl_FragDepth = 1.0 / distance(Position, CameraOrigin.xyz);
 }

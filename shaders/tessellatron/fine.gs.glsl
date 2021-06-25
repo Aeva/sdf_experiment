@@ -29,23 +29,33 @@ layout(triangle_strip, max_vertices = 3) out;
 
 vec3 Slide(vec3 Start, vec3 Stop)
 {
-	vec3 Ray = normalize(Stop - Start);
-	float Travel = 0.0;
-	float MaxDist = distance(Start, Stop);
-	float LastDist = MaxDist;
 	vec3 Position;
-	for (int i = 0; i < 10; ++i)
 	{
-		Position = Ray * Travel + Start;
-		float Dist = EdgeMagnet(Position);
-		if (Dist <= LastDist)
+		vec3 Ray = normalize(Stop - Start);
+		float Travel = 0.0;
+		float LastDist = distance(Start, Stop);
+		for (int i = 0; i < 10; ++i)
 		{
-			Travel += Dist;
-			LastDist = Dist;
+			Position = Ray * Travel + Start;
+			float Dist = EdgeMagnet(Position);
+			if (Dist <= LastDist)
+			{
+				Travel += Dist;
+				LastDist = Dist;
+			}
+			else
+			{
+				break;
+			}
 		}
-		else
+		Position = Ray * Travel + Start;
+	}
+	{
+		vec3 Ray = normalize(EdgeGradient(Position));
+		for (int i = 0; i < 2; ++i)
 		{
-			break;
+			float Dist = EdgeMagnet(Position);
+			Position -= Ray * Dist;
 		}
 	}
 	return Position;

@@ -46,7 +46,25 @@ void main()
 	bool A = tcs_out[(gl_InvocationID + 1) % 3].Scratch.x < Threshold;
 	bool B = tcs_out[(gl_InvocationID + 2) % 3].Scratch.x < Threshold;
 
-	float Rate = (A || B) ? 7.0 : 1.0;
+	float Rate = 1.0;
+	if (A || B)
+	{
+		Rate = 7.0;
+	}
+	else if (!CutShape)
+	{
+		vec3 Center = (gl_in[(gl_InvocationID + 1) % 3].gl_Position.xyz + gl_in[(gl_InvocationID + 2) % 3].gl_Position.xyz) * 0.5;
+		int ShapeID = tcs_in[0].ShapeID;
+		int Other = ShapeID == 0 ? 1 : 0;
+		float A = Sphere(Center, ShapeID);
+		float B = Sphere(Center, Other);
+		float K = 0.6;
+		float H = clamp(0.5 + 0.5 * (B - A) / K, 0.0, 1.0);
+		if (H < 0.75)
+		{
+			Rate = 2.0;
+		}
+	}
 
 	{
 		float Angle = min(
